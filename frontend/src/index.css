@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900 transition-colors duration-300;
+  }
+  
+  .dark body {
+    @apply bg-dark-bg text-gray-100;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-brand-500 hover:bg-brand-600 text-white font-medium py-2 px-4 rounded-lg shadow-md transition-all active:scale-95;
+  }
+  
+  .btn-secondary {
+    @apply bg-white hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 border border-gray-300 rounded-lg shadow-sm transition-all active:scale-95 dark:bg-dark-panel dark:border-dark-border dark:text-gray-200 dark:hover:bg-gray-800;
+  }
+  
+  .glass-panel {
+    @apply bg-white border border-gray-200 shadow-xl rounded-xl dark:bg-dark-panel/40 dark:backdrop-blur-xl dark:border-white/10;
+  }
+
+  /* Premium Neon & Glass */
+  .neon-glow-indigo {
+    box-shadow: 0 0 20px -5px rgba(99, 102, 241, 0.4);
+  }
+  .neon-glow-pink {
+    box-shadow: 0 0 20px -5px rgba(236, 72, 153, 0.4);
+  }
+  .neon-glow-amber {
+    box-shadow: 0 0 20px -5px rgba(245, 158, 11, 0.4);
+  }
+
+  .premium-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .premium-card:hover {
+    transform: translateY(-4px);
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 rounded-full dark:bg-gray-700/50;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400 dark:bg-gray-600;
+  }
+}
