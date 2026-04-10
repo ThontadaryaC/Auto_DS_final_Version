@@ -8,10 +8,11 @@ import {
   Presentation, 
   X, 
   LayoutDashboard,
-  Zap
+  Zap,
+  Brain
 } from 'lucide-react';
 
-const MainPanel = ({ error, setLoading, setError, onOpenPanel, onRefreshHistory }) => {
+const MainPanel = ({ error, setLoading, setError, onOpenPanel, onRefreshHistory, onOpenAdvanced }) => {
   const [observation, setObservation] = useState(null);
 
   const onDrop = useCallback(async (acceptedFiles) => {
@@ -123,6 +124,40 @@ const MainPanel = ({ error, setLoading, setError, onOpenPanel, onRefreshHistory 
           </button>
         </div>
       )}
+
+      {/* Featured: Strategic AI Orchestration */}
+      <div className="animate-in slide-in-from-bottom-2 duration-500">
+        <button 
+          onClick={onOpenAdvanced}
+          className="w-full glass-panel p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-8 border-brand-500/20 hover:border-brand-500/50 transition-all premium-card group relative overflow-hidden"
+        >
+          {/* Decorative Glow */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-brand-500/10 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-brand-500/20 transition-all duration-700" />
+          
+          <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
+            <div className="relative">
+              <div className="absolute inset-0 bg-brand-500/20 blur-xl rounded-full animate-pulse group-hover:bg-brand-500/40" />
+              <div className="relative w-20 h-20 bg-brand-500/10 text-brand-500 rounded-[2rem] flex items-center justify-center group-hover:scale-110 group-hover:rotate-12 transition-all duration-500 border border-brand-500/20">
+                <Brain className="w-10 h-10" />
+              </div>
+            </div>
+            <div className="text-center md:text-left">
+              <h3 className="text-3xl font-black text-white group-hover:text-brand-400 transition-colors tracking-tight">Strategic AI Orchestration</h3>
+              <p className="text-sm text-gray-500 font-bold uppercase tracking-[0.2em] mt-1.5">Master Brain: Pattern Discovery & Precision Execution</p>
+              <div className="flex flex-wrap gap-4 mt-5 justify-center md:justify-start">
+                <span className="text-[10px] px-2.5 py-1 bg-indigo-500/10 text-indigo-400 rounded-md border border-indigo-500/20 font-black tracking-widest uppercase">Clustering Matrix</span>
+                <span className="text-[10px] px-2.5 py-1 bg-rose-500/10 text-rose-400 rounded-md border border-rose-500/20 font-black tracking-widest uppercase">Anomaly Radar</span>
+                <span className="text-[10px] px-2.5 py-1 bg-amber-500/10 text-amber-400 rounded-md border border-amber-500/20 font-black tracking-widest uppercase">99% Accuracy AutoML</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="shrink-0 flex items-center gap-4 px-8 py-4 bg-white/5 border border-white/10 rounded-3xl text-xs font-black uppercase tracking-[0.2em] group-hover:bg-brand-500 group-hover:text-white group-hover:border-brand-500 transition-all active:scale-95 shadow-xl">
+             Launch Signal Brain
+             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </div>
+        </button>
+      </div>
 
       {/* THE 3 BUTTONS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pb-12">

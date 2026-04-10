@@ -6,6 +6,9 @@ from services.data_processing import clean_dataframe, get_insights
 from services.visualization import generate_insights_chart, generate_dashboard
 from services.ai_viz import generate_ai_dashboard, generate_view_report, ai_observe_data
 from services.ml import predict_future_trends
+from services.ml_advanced import perform_clustering, detect_anomalies
+from services.automl_pro import run_advanced_automl
+from agent.orchestrator_pro import generate_strategic_plan
 
 router = APIRouter()
 
@@ -82,3 +85,45 @@ async def get_view_report(view_type: str = Body(..., embed=True), additional_con
         
     report = generate_view_report(df, view_type, additional_context)
     return {"report": report}
+
+@router.get("/analyze/strategy")
+async def get_ml_strategy():
+    df = store.get_data()
+    if df is None:
+        raise HTTPException(status_code=400, detail="No dataset uploaded")
+    
+    strategy = generate_strategic_plan(df)
+    return strategy
+
+@router.post("/analyze/clustering")
+async def run_clustering_analysis(n_clusters: int = None, features: list = None):
+    df = store.get_data()
+    if df is None:
+        raise HTTPException(status_code=400, detail="No dataset uploaded")
+    
+    result = perform_clustering(df, n_clusters=n_clusters, features=features)
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    return result
+
+@router.post("/analyze/anomaly")
+async def run_anomaly_analysis(contamination: float = 0.05):
+    df = store.get_data()
+    if df is None:
+        raise HTTPException(status_code=400, detail="No dataset uploaded")
+    
+    result = detect_anomalies(df, contamination=contamination)
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    return result
+
+@router.post("/analyze/automl")
+async def run_pro_automl(target_col: str, task_type: str = "auto"):
+    df = store.get_data()
+    if df is None:
+        raise HTTPException(status_code=400, detail="No dataset uploaded")
+    
+    result = run_advanced_automl(df, target_col=target_col, task_type=task_type)
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    return result

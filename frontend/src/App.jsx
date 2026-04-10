@@ -8,6 +8,7 @@ import OutputArea from './components/OutputArea';
 import StandaloneView from './components/StandaloneView';
 import InteractiveModal from './components/InteractiveModal';
 import HistoryModal from './components/HistoryModal';
+import AdvancedAnalysis from './components/AdvancedAnalysis';
 
 function App() {
   const [theme, setTheme] = useState('light');
@@ -25,6 +26,9 @@ function App() {
 
   // Mobile Sidebar State
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Advanced Analysis State
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
 
   // Toggle Dark Mode
   useEffect(() => {
@@ -98,6 +102,7 @@ function App() {
                 setError={setError} 
                 onOpenPanel={handleOpenPanel}
                 onRefreshHistory={fetchHistory}
+                onOpenAdvanced={() => setIsAdvancedOpen(true)}
               />
             </div>
             {/* Backdrop for mobile sidebar */}
@@ -144,6 +149,11 @@ function App() {
             theme={theme}
             onUpdateParams={(newParams) => handleOpenPanel(activePanel, newParams)}
           />
+
+          {/* Advanced AI Orchestration Modal */}
+          {isAdvancedOpen && (
+            <AdvancedAnalysis onClose={() => setIsAdvancedOpen(false)} />
+          )}
         </div>
       } />
       <Route path="/standalone/:viewType" element={<StandaloneView theme={theme} toggleTheme={toggleTheme} />} />
