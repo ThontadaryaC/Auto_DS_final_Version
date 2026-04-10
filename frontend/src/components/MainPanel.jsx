@@ -9,7 +9,8 @@ import {
   X, 
   LayoutDashboard,
   Zap,
-  Brain
+  Brain,
+  ArrowRight
 } from 'lucide-react';
 
 const MainPanel = ({ error, setLoading, setError, onOpenPanel, onRefreshHistory, onOpenAdvanced }) => {
