@@ -35,8 +35,9 @@ def store_data_in_mongo(df, filename):
         db = client[DB_NAME]
         collection = db[COLLECTION_NAME]
         
-        # Convert DataFrame to list of dictionaries
-        records = df.to_dict('records')
+        # Convert DataFrame to list of dictionaries, replacing NaT with None
+        # MongoDB cannot serialize NaT (Not a Time) values
+        records = df.astype(object).where(pd.notnull(df), None).to_dict('records')
         
         # Add metadata to each record
         from datetime import datetime

@@ -12,7 +12,8 @@ def profile_dataset_with_ai(df: pd.DataFrame, filename: str) -> dict:
     
     # 1. Prepare Metadata for the LLM
     num_rows = len(df)
-    sample_data = df.head(5).to_dict(orient='records')
+    # Use to_json to handle Timestamps/NaT properly
+    sample_data_json = df.head(5).to_json(orient='records', date_format='iso')
     cols_info = {col: str(dtype) for col, dtype in df.dtypes.items()}
     
     prompt = f"""
@@ -20,7 +21,7 @@ def profile_dataset_with_ai(df: pd.DataFrame, filename: str) -> dict:
     Dataset Name: {filename}
     Total Rows: {num_rows}
     Schema (raw dtypes): {json.dumps(cols_info)}
-    Sample Data: {json.dumps(sample_data)}
+    Sample Data: {sample_data_json}
     
     TASK: Analyze this dataset in two phases:
     1. RECOGNITION PHASE: Look at the Dataset Name "{filename}". Based JUST on this name, what industry, domain, or use case does this likely belong to?

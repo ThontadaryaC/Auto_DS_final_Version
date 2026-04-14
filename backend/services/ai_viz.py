@@ -9,7 +9,8 @@ def generate_ai_dashboard(df: pd.DataFrame, filename: str = "Unknown Dataset", s
     llm = get_llm()
     
     # Prepare data summary for the LLM
-    sample_data = df.head(5).to_dict(orient='records')
+    # Use to_json to handle Timestamps/NaT properly
+    sample_data_json = df.head(5).to_json(orient='records', date_format='iso')
     cols_info = {col: str(dtype) for col, dtype in df.dtypes.items()}
     
     prompt = f"""
@@ -18,7 +19,7 @@ def generate_ai_dashboard(df: pd.DataFrame, filename: str = "Unknown Dataset", s
     Semantic Profile: {json.dumps(semantic_profile) if semantic_profile else "Not available"}
     
     Raw Schema: {json.dumps(cols_info)} 
-    Sample Data (5 rows): {json.dumps(sample_data)}
+    Sample Data (5 rows): {sample_data_json}
     
     TASK: Generate 4 interactive Plotly charts and a professional analysis summary.
     - RECOGNITION: Ensure you acknowledge the dataset "{filename}" domain.
@@ -87,7 +88,8 @@ def ai_observe_data(df: pd.DataFrame, filename: str = "Unknown Dataset", semanti
     llm = get_llm()
     
     # Prepare data summary for the LLM
-    sample_data = df.head(3).to_dict(orient='records')
+    # Use to_json to handle Timestamps/NaT properly
+    sample_data_json = df.head(3).to_json(orient='records', date_format='iso')
     cols_info = {col: str(dtype) for col, dtype in df.dtypes.items()}
     
     prompt = f"""
@@ -101,7 +103,7 @@ def ai_observe_data(df: pd.DataFrame, filename: str = "Unknown Dataset", semanti
     {json.dumps(semantic_profile, indent=2) if semantic_profile else "No semantic profile available."}
     
     Raw Schema: {json.dumps(cols_info)}
-    Sample Records: {json.dumps(sample_data)}
+    Sample Records: {sample_data_json}
     
     TASK:
     Provide a professional, "human-like" understanding of this dataset.

@@ -14,7 +14,7 @@ UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "uploads")
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
-def background_processing(cleaned_df, filename, file_path):
+def background_processing(cleaned_df, filename, file_path, upload_id):
     """Handles heavy AI and DB tasks in the background to avoid frontend timeouts."""
     try:
         # 1. AI Semantic Profiling
@@ -24,8 +24,12 @@ def background_processing(cleaned_df, filename, file_path):
         
         # 2. Store in MongoDB
         store_data_in_mongo(cleaned_df, filename)
+
+        # 3. Store in TiDB HTAP
+        from core.tidb import tidb_manager
+        tidb_manager.store_dataset_records(cleaned_df, filename, upload_id)
         
-        # 3. AI Observation Summary
+        # 4. AI Observation Summary
         observation = ai_observe_data(cleaned_df, filename, semantic_profile)
         success_msg = f"AI analysis completed successfully. {observation}"
         store.set_observation(success_msg)
@@ -63,13 +67,13 @@ async def upload_file(background_tasks: BackgroundTasks, file: UploadFile = File
     # Store globally for active session immediately
     store.set_data(cleaned_df, file.filename)
     
-    # Log to persistent SQLite database
-    log_upload(file.filename, file_path, len(cleaned_df))
+    # Log to persistent TiDB database
+    upload_id = log_upload(file.filename, file_path, len(cleaned_df))
     
     # NEW: Trigger slow tasks in background
     store.set_status("processing")
     store.set_observation("AI analysis started... Please wait a few seconds.")
-    background_tasks.add_task(background_processing, cleaned_df, file.filename, file_path)
+    background_tasks.add_task(background_processing, cleaned_df, file.filename, file_path, upload_id)
     
     # Return immediately with basic insights
     # semantic_profile is not yet available, so we pass None
