@@ -38,8 +38,13 @@ async def upload_file(file: UploadFile = File(...)):
     # Clean dataframe automatically
     cleaned_df = clean_dataframe(df)
     
+    # NEW: AI Semantic Profiling
+    from services.semantic_logic import profile_dataset_with_ai
+    semantic_profile = profile_dataset_with_ai(cleaned_df, file.filename)
+    
     # Store globally for single-user session
     store.set_data(cleaned_df, file.filename)
+    store.set_semantic_profile(semantic_profile)
     
     # Log to persistent database
     log_upload(file.filename, file_path, len(cleaned_df))
@@ -47,11 +52,13 @@ async def upload_file(file: UploadFile = File(...)):
     # Store data in MongoDB Atlas
     store_data_in_mongo(cleaned_df, file.filename)
     
-    insights = get_insights(cleaned_df)
-    observation = ai_observe_data(cleaned_df)
+    insights = get_insights(cleaned_df, semantic_profile)
+    # Pass filename and semantic profile for a deeper observation
+    observation = ai_observe_data(cleaned_df, file.filename, semantic_profile)
     
     return {
         "message": f"Successfully uploaded and saved {file.filename}",
         "insights": insights,
-        "observation": observation
+        "observation": observation,
+        "semantic_profile": semantic_profile
     }

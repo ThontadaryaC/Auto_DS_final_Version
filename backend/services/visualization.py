@@ -41,100 +41,115 @@ def generate_insights_chart(df: pd.DataFrame) -> dict:
     apply_premium_style(fig)
     return json.loads(fig.to_json())
 
-def generate_dashboard(df: pd.DataFrame) -> dict:
-    """Generate a comprehensive suite of PowerBI-style charts."""
-    num_cols = df.select_dtypes(include='number').columns.tolist()
-    cat_cols = df.select_dtypes(include=['object', 'category', 'string']).columns.tolist()
+def generate_dashboard(df: pd.DataFrame, semantic_profile: dict = None) -> dict:
+    """Generate a comprehensive suite of PowerBI-style charts using semantic intelligence."""
+    # Extract semantic info
+    date_cols = []
+    num_cols = []
+    cat_cols = []
     
+    if semantic_profile and "columns" in semantic_profile:
+        for col_info in semantic_profile["columns"]:
+            name = col_info["name"]
+            stype = col_info["semantic_type"]
+            if name not in df.columns: continue
+            
+            if stype == "Date":
+                date_cols.append(name)
+            elif stype in ["Numeric", "Currency", "Age"]:
+                num_cols.append(name)
+            elif stype in ["Category", "Geographic"]:
+                cat_cols.append(name)
+    
+    # Fallback to dtypes if semantic profile is missing or incomplete
+    if not num_cols:
+        num_cols = df.select_dtypes(include='number').columns.tolist()
+    if not cat_cols:
+        cat_cols = df.select_dtypes(include=['object', 'category', 'string']).columns.tolist()
+    if not date_cols:
+        date_cols = df.select_dtypes(include=['datetime', 'datetimetz']).columns.tolist()
+
     charts = {}
     mako_colors = get_seaborn_colors("mako", 5)
     flare_colors = get_seaborn_colors("flare", 5)
     rocket_colors = get_seaborn_colors("rocket", 10)
     
-    # Scatter Plot (Relationship)
-    if len(num_cols) >= 2:
-        fig_scatter = px.scatter(
-            df, x=num_cols[0], y=num_cols[1], 
-            title=f"Relationship: {num_cols[0]} vs {num_cols[1]}",
-            template="plotly_white",
-            color_discrete_sequence=mako_colors
+    # 1. AI RECOMMENDED PLOTS (Highest Priority)
+    if semantic_profile and "recommended_plots" in semantic_profile:
+        for i, rec in enumerate(semantic_profile["recommended_plots"][:2]): # Top 2 AI recs
+            try:
+                ptype = rec["type"].lower()
+                x, y = rec["x"], rec["y"]
+                if x not in df.columns or y not in df.columns: continue
+                
+                if ptype == "line":
+                    fig = px.line(df.sort_values(by=x), x=x, y=y, title=rec["reason"])
+                elif ptype == "scatter":
+                    fig = px.scatter(df, x=x, y=y, title=rec["reason"])
+                elif ptype == "bar":
+                    summary = df.groupby(x)[y].mean().reset_index().sort_values(by=y, ascending=False).head(10)
+                    fig = px.bar(summary, x=x, y=y, title=rec["reason"])
+                else:
+                    continue
+                
+                apply_premium_style(fig)
+                charts[f'ai_rec_{i}'] = json.loads(fig.to_json())
+            except Exception:
+                continue
+
+    # 2. TREND OVER TIME (Using semantic Date)
+    if date_cols and num_cols:
+        time_col = date_cols[0]
+        val_col = num_cols[0]
+        # Resample or just sort for better line charts
+        trend_data = df.sort_values(by=time_col).copy()
+        fig_trend = px.line(
+            trend_data, x=time_col, y=val_col,
+            title=f"Evolution of {val_col} over {time_col}",
+            color_discrete_sequence=[mako_colors[0]]
         )
-        apply_premium_style(fig_scatter)
-        fig_scatter.update_traces(marker=dict(size=10, opacity=0.6, line=dict(width=1, color='DarkSlateGrey')))
-        charts['scatter'] = json.loads(fig_scatter.to_json())
-    
-    # Bar Chart (Averages)
-    if len(cat_cols) > 0 and len(num_cols) > 0:
-        summary = df.groupby(cat_cols[0])[num_cols[0]].mean().reset_index().sort_values(by=num_cols[0], ascending=False).head(10)
-        fig_bar = px.bar(
-            summary, x=cat_cols[0], y=num_cols[0], 
-            title=f"Average {num_cols[0]} per {cat_cols[0]}",
-            color=cat_cols[0],
-            color_discrete_sequence=flare_colors
-        )
-        apply_premium_style(fig_bar)
-        charts['bar'] = json.loads(fig_bar.to_json())
-        
-    # Histogram (Distribution)
-    if len(num_cols) > 0:
+        apply_premium_style(fig_trend)
+        charts['time_series'] = json.loads(fig_trend.to_json())
+
+    # 3. DISTRIBUTION (Histogram)
+    if num_cols:
         fig_hist = px.histogram(
             df, x=num_cols[0], 
             title=f"Distribution Profile: {num_cols[0]}",
-            color_discrete_sequence=[mako_colors[0]],
+            color_discrete_sequence=[flare_colors[0]],
             nbins=30
         )
         apply_premium_style(fig_hist)
-        fig_hist.update_layout(bargap=0.1)
         charts['histogram'] = json.loads(fig_hist.to_json())
 
-    # Pie Chart (Market Share / Composition)
-    if len(cat_cols) > 0:
-        best_pie_col = cat_cols[0]
-        for col in cat_cols:
-            if 2 <= df[col].nunique() <= 10:
-                best_pie_col = col
+    # 4. COMPOSITION (Pie/Donut)
+    if cat_cols:
+        # Find best cat col (not unique, but not too many)
+        best_cat = cat_cols[0]
+        for c in cat_cols:
+            if 2 <= df[c].nunique() <= 10:
+                best_cat = c
                 break
         
-        pie_data = df[best_pie_col].value_counts().reset_index().head(10)
-        pie_data.columns = [best_pie_col, 'Count']
+        pie_data = df[best_cat].value_counts().reset_index().head(10)
+        pie_data.columns = [best_cat, 'Count']
         fig_pie = px.pie(
-            pie_data, names=best_pie_col, values='Count',
-            title=f"Composition: {best_pie_col}",
+            pie_data, names=best_cat, values='Count',
+            title=f"Composition of {best_cat}",
             color_discrete_sequence=rocket_colors,
-            hole=0.4 # Donut format
+            hole=0.4
         )
         apply_premium_style(fig_pie)
         charts['pie'] = json.loads(fig_pie.to_json())
 
-    # Box Plot (Outliers and Quartiles)
-    if len(num_cols) > 0:
-        if len(cat_cols) > 0 and df[cat_cols[0]].nunique() <= 10:
-            fig_box = px.box(
-                df, x=cat_cols[0], y=num_cols[0],
-                title=f"Spread & Outliers: {num_cols[0]} by {cat_cols[0]}",
-                color=cat_cols[0],
-                color_discrete_sequence=flare_colors
-            )
-        else:
-            fig_box = px.box(
-                df, y=num_cols[0],
-                title=f"Statistical Spread: {num_cols[0]}",
-                color_discrete_sequence=[flare_colors[0]]
-            )
-        apply_premium_style(fig_box)
-        charts['box'] = json.loads(fig_box.to_json())
-        
-    # Line Chart (Trend over Index)
-    if len(num_cols) > 0:
-        trend_col = num_cols[1] if len(num_cols) > 1 else num_cols[0]
-        trend_data = df.head(100).reset_index()
-        fig_line = px.line(
-            trend_data, x=trend_data.index, y=trend_col,
-            title=f"Sequential Trend: {trend_col} (Sample)",
-            color_discrete_sequence=[rocket_colors[0]],
-            markers=True
+    # 5. RELATIONSHIP (Scatter)
+    if len(num_cols) >= 2:
+        fig_scatter = px.scatter(
+            df, x=num_cols[0], y=num_cols[1], 
+            title=f"Correlation: {num_cols[0]} vs {num_cols[1]}",
+            color_discrete_sequence=[mako_colors[1]]
         )
-        apply_premium_style(fig_line)
-        charts['line'] = json.loads(fig_line.to_json())
+        apply_premium_style(fig_scatter)
+        charts['scatter'] = json.loads(fig_scatter.to_json())
 
     return charts

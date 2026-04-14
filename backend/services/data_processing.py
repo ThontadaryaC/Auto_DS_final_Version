@@ -12,12 +12,22 @@ def clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df = df.dropna(how='all', axis=1)
     df = df.drop_duplicates()
     
-    # Explicit type inference
+    # Explicit type inference & Date detection
     for col in df.columns:
+        # Try numeric first
         try:
             df[col] = pd.to_numeric(df[col])
+            continue
         except (ValueError, TypeError):
             pass
+            
+        # Try date detection
+        if "date" in col.lower() or "time" in col.lower() or "year" in col.lower():
+            try:
+                df[col] = pd.to_datetime(df[col])
+                continue
+            except (ValueError, TypeError):
+                pass
     
     # Also refine types (Int64, Float64, string, etc.)
     df = df.convert_dtypes()
@@ -37,13 +47,21 @@ def clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
                     
     return df
 
-def get_insights(df: pd.DataFrame) -> dict:
-    """Returns basic DataFrame insights."""
+def get_insights(df: pd.DataFrame, semantic_profile: dict = None) -> dict:
+    """Returns comprehensive DataFrame insights joined with AI semantic metadata."""
     summary = df.describe(include='all').to_dict()
+    
+    # Cast summary to string to ensure serializability
+    stats = {}
+    for col, s in summary.items():
+        stats[col] = {k: str(v) for k, v in s.items()}
+        
     info = {
         "rows": len(df),
         "cols": len(df.columns),
         "columns": list(df.columns),
-        "dtypes": {col: str(dtype) for col, dtype in df.dtypes.items()}
+        "dtypes": {col: str(dtype) for col, dtype in df.dtypes.items()},
+        "statistics": stats,
+        "semantic_meta": semantic_profile
     }
     return info

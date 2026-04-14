@@ -32,15 +32,22 @@ async def load_file_from_history(file_id: int):
         raise HTTPException(status_code=400, detail="Failed to load file from disk")
         
     cleaned_df = clean_dataframe(df)
+    
+    # NEW: AI Semantic Profiling
+    from services.semantic_logic import profile_dataset_with_ai
+    semantic_profile = profile_dataset_with_ai(cleaned_df, record['filename'])
+    
     store.set_data(cleaned_df, record['filename'])
+    store.set_semantic_profile(semantic_profile)
     
     insights = get_insights(cleaned_df)
-    observation = ai_observe_data(cleaned_df)
+    observation = ai_observe_data(cleaned_df, record['filename'], semantic_profile)
     
     return {
         "message": f"Successfully loaded {record['filename']} from history",
         "insights": insights,
-        "observation": observation
+        "observation": observation,
+        "semantic_profile": semantic_profile
     }
 
 @router.get("/insights")
@@ -58,8 +65,9 @@ async def get_dashboard_view():
     if df is None:
         raise HTTPException(status_code=400, detail="No dataset uploaded")
     
-    # Use native pandas/plotly for charts to avoid Gemini JSON hallucination
-    charts = generate_dashboard(df)
+    # Use semantic profile for smarter dashboard
+    profile = store.get_semantic_profile()
+    charts = generate_dashboard(df, profile)
     return {"charts": charts}
 
 @router.get("/predict")
@@ -68,7 +76,8 @@ async def get_prediction_view(model: str = "linear", periods: int = 10):
     if df is None:
         raise HTTPException(status_code=400, detail="No dataset uploaded")
     
-    chart_data = predict_future_trends(df, model_name=model, periods=periods)
+    profile = store.get_semantic_profile()
+    chart_data = predict_future_trends(df, model_name=model, periods=periods, semantic_profile=profile)
     if "error" in chart_data:
         raise HTTPException(status_code=400, detail=chart_data["error"])
         
@@ -92,7 +101,9 @@ async def get_ml_strategy():
     if df is None:
         raise HTTPException(status_code=400, detail="No dataset uploaded")
     
-    strategy = generate_strategic_plan(df)
+    filename = store.get_filename() or "Unknown"
+    profile = store.get_semantic_profile()
+    strategy = generate_strategic_plan(df, filename, profile)
     return strategy
 
 @router.post("/analyze/clustering")
@@ -123,7 +134,8 @@ async def run_pro_automl(target_col: str, task_type: str = "auto"):
     if df is None:
         raise HTTPException(status_code=400, detail="No dataset uploaded")
     
-    result = run_advanced_automl(df, target_col=target_col, task_type=task_type)
+    profile = store.get_semantic_profile()
+    result = run_advanced_automl(df, target_col=target_col, task_type=task_type, semantic_profile=profile)
     if "error" in result:
         raise HTTPException(status_code=400, detail=result["error"])
     return result

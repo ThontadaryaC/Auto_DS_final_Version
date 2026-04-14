@@ -3,9 +3,9 @@ import json
 from agent.llm_config import get_llm
 from langchain_core.messages import HumanMessage
 
-def generate_strategic_plan(df: pd.DataFrame) -> dict:
+def generate_strategic_plan(df: pd.DataFrame, filename: str = "Unknown", semantic_profile: dict = None) -> dict:
     """
-    Uses LLM to analyze dataset and decide the best ML strategy.
+    Uses LLM to analyze dataset and decide the best ML strategy with semantic awareness.
     Returns instructions for Clustering, Anomaly Detection, or AutoML.
     """
     llm = get_llm()
@@ -17,11 +17,16 @@ def generate_strategic_plan(df: pd.DataFrame) -> dict:
     
     prompt = f"""
     You are a Master AI Data Scientist.
-    Dataset Metadata: {num_rows} rows.
+    Dataset Name: {filename}
+    Semantic Context: {json.dumps(semantic_profile) if semantic_profile else "Not available"}
+    
+    Raw Metadata: {num_rows} rows.
     Schema: {json.dumps(cols_info)}
     Sample Data (5 rows): {json.dumps(sample_data)}
     
     TASK: Analyze the dataset structure and domain. Decide on a 3-part strategic ML plan.
+    Special Instructions: If 'Date' columns are present, prioritize Time-Series or Trend analysis in AutoML. 
+    If IDs are present, ensure they are NOT used as features for Clustering or Anomaly detection.
     
     STRATEGY OPTIONS:
     1. CLUSTERING: Groups similar records. Recommendation: Which features to use?
@@ -30,8 +35,8 @@ def generate_strategic_plan(df: pd.DataFrame) -> dict:
     
     Return EXACTLY this JSON structure:
     {{
-      "domain": "Domain of data (e.g. Finance, Retail, Health)",
-      "thinking": "Professional reasoning for the plan (2 sentences max)",
+      "domain": "Detailed domain name",
+      "thinking": "Professional reasoning (2 sentences max) based on the semantic understanding.",
       "clustering": {{
         "recommended_features": ["col1", "col2"],
         "suggested_k": 3
@@ -42,7 +47,7 @@ def generate_strategic_plan(df: pd.DataFrame) -> dict:
       }},
       "automl": {{
         "target_col": "most_important_variable",
-        "task_type": "regression/classification"
+        "task_type": "regression/classification/timeseries"
       }}
     }}
     NO MARKDOWN. VALID JSON ONLY.

@@ -11,7 +11,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from utils.viz_utils import apply_premium_style, get_seaborn_colors
 
-def run_advanced_automl(df: pd.DataFrame, target_col: str, task_type: str = "auto") -> dict:
+def run_advanced_automl(df: pd.DataFrame, target_col: str, task_type: str = "auto", semantic_profile: dict = None) -> dict:
     """
     High-precision AutoML engine.
     - Automatic task detection
@@ -21,9 +21,20 @@ def run_advanced_automl(df: pd.DataFrame, target_col: str, task_type: str = "aut
     if target_col not in df.columns:
         return {"error": f"Target column '{target_col}' not found"}
 
-    # 1. Clean and Prepare
-    X = df.drop(columns=[target_col])
+    # Identify Features using Semantic Profile if available
+    cols_to_drop = [target_col]
+    if semantic_profile and "columns" in semantic_profile:
+        for col_info in semantic_profile["columns"]:
+            if col_info["semantic_type"] == "ID":
+                cols_to_drop.append(col_info["name"])
+    
+    X = df.drop(columns=[c for c in cols_to_drop if c in df.columns])
     y = df[target_col]
+    
+    # Pre-process Dates in X to numeric
+    for col in X.columns:
+        if pd.api.types.is_datetime64_any_dtype(X[col]):
+            X[col] = X[col].apply(lambda x: x.toordinal() if pd.notnull(x) else 0)
     
     # Handle missing values in target
     mask = y.notna()

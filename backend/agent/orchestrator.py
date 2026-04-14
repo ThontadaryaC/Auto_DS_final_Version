@@ -3,10 +3,15 @@ from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe
 from agent.llm_config import get_llm
 import io
 
-def query_agent(df: pd.DataFrame, query: str) -> str:
-    """Uses Langchain to answer user query over the given dataframe."""
+def query_agent(df: pd.DataFrame, query: str, filename: str = "Unknown", semantic_profile: dict = None) -> str:
+    """Uses Langchain to answer user query over the given dataframe with semantic awareness."""
     llm = get_llm()
-    # The experimental Pandas agent creates python code to answer the query
+    
+    # Prepare semantic context for the agent
+    profile_summary = ""
+    if semantic_profile:
+        profile_summary = f"Dataset Name: {filename}. Domain: {semantic_profile.get('domain', 'Unknown')}. Description: {semantic_profile.get('summary', '')}"
+    
     try:
         agent_executor = create_pandas_dataframe_agent(
             llm, 
@@ -14,7 +19,7 @@ def query_agent(df: pd.DataFrame, query: str) -> str:
             verbose=False,
             agent_type="tool-calling",
             allow_dangerous_code=True,
-            prefix="You are a world-class Senior Data Scientist. Answer questions about the provided dataframe with precision. If you use code to find an answer, summarize the findings professionally. "
+            prefix=f"You are a world-class Senior Data Scientist. {profile_summary}. Answer questions about this dataset with precision. Always prioritize detected semantic types like 'Date' or 'Currency' if the user asks about trends or money. "
         )
         
         response = agent_executor.invoke({"input": query})

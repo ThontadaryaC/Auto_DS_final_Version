@@ -57,75 +57,81 @@ def evaluate_best_model(X: np.ndarray, y: np.ndarray):
     best_model.fit(X, y)
     return best_model, best_model_name, min_mse
 
-def predict_future_trends(df: pd.DataFrame, model_name: str = "auto", periods: int = 10) -> dict:
-    """Uses AutoML or specific ML models to predict future values."""
-    num_cols = df.select_dtypes(include='number').columns.tolist()
+def predict_future_trends(df: pd.DataFrame, model_name: str = "auto", periods: int = 10, semantic_profile: dict = None) -> dict:
+    """Uses AutoML or specific ML models to predict future values with semester awareness."""
+    date_cols = []
+    num_cols = []
+    
+    if semantic_profile and "columns" in semantic_profile:
+        for col_info in semantic_profile["columns"]:
+            if col_info["semantic_type"] == "Date":
+                date_cols.append(col_info["name"])
+            elif col_info["semantic_type"] in ["Numeric", "Currency", "Age"]:
+                num_cols.append(col_info["name"])
+    
+    if not num_cols:
+        num_cols = df.select_dtypes(include='number').columns.tolist()
+    if not date_cols:
+        date_cols = df.select_dtypes(include=['datetime', 'datetimetz']).columns.tolist()
+
     if not num_cols:
         return {"error": "No numerical columns available for prediction"}
         
-    # Pick target column based on variance (basic automation)
+    # Target column selection
     target_col = num_cols[0]
-    for col in num_cols:
-        if df[col].var() > df[target_col].var():
-            target_col = col
-            
-    X = np.arange(len(df)).reshape(-1, 1)
-    y = df[target_col].fillna(df[target_col].mean()).values
     
+    # Timeline generation
+    if date_cols:
+        time_col = date_cols[0]
+        # Convert date to numeric ordinal for regression
+        df_sorted = df.sort_values(by=time_col).dropna(subset=[time_col, target_col])
+        X = df_sorted[time_col].apply(lambda x: x.toordinal()).values.reshape(-1, 1)
+        y = df_sorted[target_col].values
+        
+        last_date = df_sorted[time_col].max()
+        future_dates = [last_date + pd.Timedelta(days=i+1) for i in range(periods)]
+        future_X = np.array([d.toordinal() for d in future_dates]).reshape(-1, 1)
+        x_axis_labels = future_dates
+        hist_x = df_sorted[time_col]
+        future_x = future_dates
+    else:
+        X = np.arange(len(df)).reshape(-1, 1)
+        y = df[target_col].fillna(df[target_col].mean()).values
+        future_X = np.arange(len(df), len(df) + periods).reshape(-1, 1)
+        hist_x = X.flatten()
+        future_x = future_X.flatten()
+
     best_name = model_name
-    
-    # Model Selection logic
     if model_name == "auto":
         model, best_name, _ = evaluate_best_model(X, y)
-        future_X = np.arange(len(df), len(df) + periods).reshape(-1, 1)
         future_y = model.predict(future_X)
-    elif model_name == "random_forest":
-        model = RandomForestRegressor(n_estimators=100, random_state=42)
-        model.fit(X, y)
-        future_X = np.arange(len(df), len(df) + periods).reshape(-1, 1)
-        future_y = model.predict(future_X)
-    elif model_name == "moving_average":
-        window = 5
-        last_values = y[-window:].tolist()
-        future_y = []
-        for _ in range(periods):
-            avg = sum(last_values) / len(last_values)
-            future_y.append(avg)
-            last_values.pop(0)
-            last_values.append(avg)
-        future_X = np.arange(len(df), len(df) + periods).reshape(-1, 1)
-    else: # Default: Linear Regression
+    else:
         model = LinearRegression()
         model.fit(X, y)
-        future_X = np.arange(len(df), len(df) + periods).reshape(-1, 1)
         future_y = model.predict(future_X)
         best_name = "linear"
     
-    # Generate Premium Visualization using Seaborn colors
+    # Generate Premium Visualization
     colors = get_seaborn_colors("rocket", 2)
     fig = go.Figure()
     
-    # Actual Data
     fig.add_trace(go.Scatter(
-        x=X.flatten(), y=y, 
+        x=hist_x, y=y, 
         mode='lines+markers', 
         name='Historical Data',
-        line=dict(color=colors[0], width=3),
-        marker=dict(size=6, opacity=0.7)
+        line=dict(color=colors[0], width=3)
     ))
     
-    # Prediction
     fig.add_trace(go.Scatter(
-        x=future_X.flatten(), y=future_y, 
+        x=future_x, y=future_y, 
         mode='lines+markers', 
-        name=f'Forecast ({best_name.replace("_", " ").title()})',
-        line=dict(color=colors[1], width=3, dash='dash'),
-        marker=dict(size=8, symbol='diamond')
+        name=f'Forecast ({best_name.title()})',
+        line=dict(color=colors[1], width=3, dash='dash')
     ))
     
     fig.update_layout(
-        title=f"AutoML Analysis: {best_name.replace('_', ' ').title()} Forecast for {target_col}", 
-        xaxis_title="Timeline/Index", 
+        title=f"AI Forecast: {target_col} Trends", 
+        xaxis_title="Timeline" if date_cols else "Index", 
         yaxis_title=target_col
     )
     
@@ -133,5 +139,5 @@ def predict_future_trends(df: pd.DataFrame, model_name: str = "auto", periods: i
     
     return {
         "chart": json.loads(fig.to_json()),
-        "model_name": best_name.replace("_", " ").title()
+        "model_name": best_name.title()
     }

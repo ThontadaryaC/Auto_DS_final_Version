@@ -4,8 +4,8 @@ from agent.llm_config import get_llm
 from langchain_core.messages import HumanMessage
 import numpy as np
 
-def generate_ai_dashboard(df: pd.DataFrame) -> dict:
-    """Uses Gemini to analyze data and generate diverse Plotly visualizations and a report."""
+def generate_ai_dashboard(df: pd.DataFrame, filename: str = "Unknown Dataset", semantic_profile: dict = None) -> dict:
+    """Uses Gemini to analyze data and generate diverse Plotly visualizations and a report based on semantic profile."""
     llm = get_llm()
     
     # Prepare data summary for the LLM
@@ -14,17 +14,17 @@ def generate_ai_dashboard(df: pd.DataFrame) -> dict:
     
     prompt = f"""
     You are a Senior Data Scientist.
-    Dataset: {json.dumps(cols_info)} 
+    Dataset Name: {filename}
+    Semantic Profile: {json.dumps(semantic_profile) if semantic_profile else "Not available"}
+    
+    Raw Schema: {json.dumps(cols_info)} 
     Sample Data (5 rows): {json.dumps(sample_data)}
     
     TASK: Generate 4 interactive Plotly charts and a professional analysis summary.
-    
-    REQUIREMENTS:
-    - 4 Charts with unique IDs.
-    - Provide 'data' and 'layout' for each chart in Plotly JSON format.
-    - COLORS: Use professional, high-contrast Seaborn-inspired color palettes (e.g., "Rocket", "Mako", "Viridis").
-    - LAYOUT: Ensure charts have titles, gridlines, "plotly_white" template, and clean fonts (Inter or Sans-serif).
-    - Analysis must be concise but deeply insightful (3 sentences).
+    - RECOGNITION: Ensure you acknowledge the dataset "{filename}" domain.
+    - ACCURACY: Use the Semantic Profile to pick the right column types (e.g. use Dates for X-axis Trend lines).
+    - COLORS: Use professional Seaborn palettes. 
+    - REPORT: Provide a professional analysis based on the recognized context.
     
     Return ONLY a JSON object:
     {{
@@ -82,7 +82,7 @@ def generate_view_report(df: pd.DataFrame, view_type: str, additional_context: s
         print(f"Error generating AI report for {view_type}: {e}")
         return "AI was unable to generate a report for this view."
 
-def ai_observe_data(df: pd.DataFrame) -> str:
+def ai_observe_data(df: pd.DataFrame, filename: str = "Unknown Dataset", semantic_profile: dict = None) -> str:
     """Uses Gemini to provide a natural language summary/observation of the dataset."""
     llm = get_llm()
     
@@ -92,12 +92,24 @@ def ai_observe_data(df: pd.DataFrame) -> str:
     
     prompt = f"""
     You are an AI Data Science Strategist.
-    Metadata Catalog: {json.dumps(cols_info)}
+    Dataset Name: {filename}
+    
+    Initial AI Recognition:
+    {semantic_profile.get('filename_assessment', 'Assessing based on file name...') if semantic_profile else "No initial assessment available."}
+    
+    Detected Semantic Profile:
+    {json.dumps(semantic_profile, indent=2) if semantic_profile else "No semantic profile available."}
+    
+    Raw Schema: {json.dumps(cols_info)}
     Sample Records: {json.dumps(sample_data)}
     
     TASK:
-    Analyze the structure and initial rows. Provide a concise (2-3 sentences) observation about the dataset's domain, potential use cases, and immediately visible patterns.
-    Avoid stating the obvious; provide depth.
+    Provide a professional, "human-like" understanding of this dataset.
+    - START by explicitly acknowledging your recognition of the dataset name "{filename}" and what it tells you about the context.
+    - Then, connect this to the actual content you see in the columns and sample records.
+    - Explain what the content represents in business terms.
+    - Highlight 1-2 key patterns or relationships that are immediately visible.
+    - Keep it concise (3-5 sentences).
     """
     
     try:
@@ -105,4 +117,4 @@ def ai_observe_data(df: pd.DataFrame) -> str:
         return response.content.strip()
     except Exception as e:
         print(f"Error observing data with AI: {e}")
-        return "Dataset successfully uploaded and processed. Ready for analysis."
+        return f"Successfully processed {filename}. Ready for analysis."

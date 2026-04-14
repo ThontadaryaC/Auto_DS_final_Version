@@ -11,11 +11,14 @@ class ChatRequest(BaseModel):
 @router.post("/chat")
 async def chat_with_agent(request: ChatRequest):
     df = store.get_data()
+    filename = store.get_filename() or "Unknown"
+    profile = store.get_semantic_profile()
+    
     if df is None:
         return {"response": "Please upload a dataset first."}
         
     try:
-        response = query_agent(df, request.query)
+        response = query_agent(df, request.query, filename, profile)
         return {"response": response}
     except Exception as e:
         return {"response": f"Error communicating with AI agent: {str(e)}"}
