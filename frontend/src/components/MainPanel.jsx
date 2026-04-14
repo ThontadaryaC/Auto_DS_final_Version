@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import axios from 'axios';
 import { 
@@ -43,6 +43,26 @@ const MainPanel = ({ error, setLoading, setError, onOpenPanel, onRefreshHistory,
       setLoading(false);
     }
   }, [setLoading, setError, onRefreshHistory]);
+
+  // Polling for status updates if AI analysis is in progress
+  useEffect(() => {
+    let interval;
+    if (observation === "AI analysis started... Please wait a few seconds.") {
+      interval = setInterval(async () => {
+        try {
+          const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/status`);
+          if (res.data.status === 'completed' || res.data.status === 'failed') {
+            setObservation(res.data.observation);
+            clearInterval(interval);
+          }
+        } catch (err) {
+          console.error("Status check failed", err);
+          clearInterval(interval);
+        }
+      }, 3000); // Poll every 3 seconds
+    }
+    return () => clearInterval(interval);
+  }, [observation]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,

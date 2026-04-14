@@ -27,11 +27,13 @@ def background_processing(cleaned_df, filename, file_path):
         
         # 3. AI Observation Summary
         observation = ai_observe_data(cleaned_df, filename, semantic_profile)
-        # We can store the observation in the global store as well
-        # assuming the store supports it or we use it for subsequent chat
-        # For now, we just log it or it will be available for next history load
+        success_msg = f"AI analysis completed successfully. {observation}"
+        store.set_observation(success_msg)
+        store.set_status("completed")
         print(f"Background processing completed for {filename}")
     except Exception as e:
+        store.set_status("failed")
+        store.set_observation(f"Error in background processing: {e}")
         print(f"Error in background processing for {filename}: {e}")
 
 @router.post("/upload")
@@ -65,6 +67,8 @@ async def upload_file(background_tasks: BackgroundTasks, file: UploadFile = File
     log_upload(file.filename, file_path, len(cleaned_df))
     
     # NEW: Trigger slow tasks in background
+    store.set_status("processing")
+    store.set_observation("AI analysis started... Please wait a few seconds.")
     background_tasks.add_task(background_processing, cleaned_df, file.filename, file_path)
     
     # Return immediately with basic insights
@@ -74,6 +78,13 @@ async def upload_file(background_tasks: BackgroundTasks, file: UploadFile = File
     return {
         "message": f"Successfully uploaded {file.filename}. AI analysis is running in the background.",
         "insights": insights,
-        "observation": "AI analysis started... Please wait a few seconds.",
-        "status": "processing"
+        "observation": store.get_observation(),
+        "status": store.get_status()
+    }
+
+@router.get("/status")
+async def get_upload_status():
+    return {
+        "status": store.get_status(),
+        "observation": store.get_observation()
     }
