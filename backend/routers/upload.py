@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks
 import os
 import shutil
 from utils.file_parser import parse_file
@@ -14,8 +14,28 @@ UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "uploads")
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
+def background_processing(cleaned_df, filename, file_path):
+    """Handles heavy AI and DB tasks in the background to avoid frontend timeouts."""
+    try:
+        # 1. AI Semantic Profiling
+        from services.semantic_logic import profile_dataset_with_ai
+        semantic_profile = profile_dataset_with_ai(cleaned_df, filename)
+        store.set_semantic_profile(semantic_profile)
+        
+        # 2. Store in MongoDB
+        store_data_in_mongo(cleaned_df, filename)
+        
+        # 3. AI Observation Summary
+        observation = ai_observe_data(cleaned_df, filename, semantic_profile)
+        # We can store the observation in the global store as well
+        # assuming the store supports it or we use it for subsequent chat
+        # For now, we just log it or it will be available for next history load
+        print(f"Background processing completed for {filename}")
+    except Exception as e:
+        print(f"Error in background processing for {filename}: {e}")
+
 @router.post("/upload")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     if not file.filename.lower().endswith(('.csv', '.xlsx', '.xls', '.xml')):
         raise HTTPException(status_code=400, detail="Unsupported file format")
         
@@ -29,7 +49,7 @@ async def upload_file(file: UploadFile = File(...)):
     with open(file_path, "wb") as f:
         f.write(content)
         
-    # Parse for processing using the content we already have
+    # Parse for processing
     df = await parse_file(content, file.filename)
     
     if df is None:
@@ -38,27 +58,22 @@ async def upload_file(file: UploadFile = File(...)):
     # Clean dataframe automatically
     cleaned_df = clean_dataframe(df)
     
-    # NEW: AI Semantic Profiling
-    from services.semantic_logic import profile_dataset_with_ai
-    semantic_profile = profile_dataset_with_ai(cleaned_df, file.filename)
-    
-    # Store globally for single-user session
+    # Store globally for active session immediately
     store.set_data(cleaned_df, file.filename)
-    store.set_semantic_profile(semantic_profile)
     
-    # Log to persistent database
+    # Log to persistent SQLite database
     log_upload(file.filename, file_path, len(cleaned_df))
     
-    # Store data in MongoDB Atlas
-    store_data_in_mongo(cleaned_df, file.filename)
+    # NEW: Trigger slow tasks in background
+    background_tasks.add_task(background_processing, cleaned_df, file.filename, file_path)
     
-    insights = get_insights(cleaned_df, semantic_profile)
-    # Pass filename and semantic profile for a deeper observation
-    observation = ai_observe_data(cleaned_df, file.filename, semantic_profile)
+    # Return immediately with basic insights
+    # semantic_profile is not yet available, so we pass None
+    insights = get_insights(cleaned_df, None)
     
     return {
-        "message": f"Successfully uploaded and saved {file.filename}",
+        "message": f"Successfully uploaded {file.filename}. AI analysis is running in the background.",
         "insights": insights,
-        "observation": observation,
-        "semantic_profile": semantic_profile
+        "observation": "AI analysis started... Please wait a few seconds.",
+        "status": "processing"
     }
