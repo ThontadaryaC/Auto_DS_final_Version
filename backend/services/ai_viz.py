@@ -139,12 +139,11 @@ def ai_observe_data(df: pd.DataFrame, filename: str = "Unknown Dataset", semanti
     Sample Records: {sample_data_json}
     
     TASK:
-    Provide a comprehensive, human-like strategic observation of this dataset (Target 1-2 pages of text).
-    - START by explicitly acknowledging your deep recognition of the dataset "{filename}" and its industry context.
-    - CONNECT the raw columns to actual business objects (e.g., 'revenue' isn't just a float, it's a financial performance metric).
-    - ANALYZE the sample records for immediate red flags or golden opportunities.
-    - SYNTHESIZE at least 5 key observations about the data structure and potential latent patterns.
-    - Use a tone that is both brilliant and accessible.
+    Provide a human-like strategic observation of this dataset.
+    - Your response MUST be exactly two sentences (approx. 2 lines of text) long.
+    - START by acknowledging your recognition of the dataset "{filename}".
+    - Focus on the most critical business insight or pattern discovered.
+    - Keep it brilliant, concise, and professional.
     """
     
     try:

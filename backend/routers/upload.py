@@ -31,8 +31,7 @@ def background_processing(cleaned_df, filename, file_path, upload_id):
         
         # 4. AI Observation Summary
         observation = ai_observe_data(cleaned_df, filename, semantic_profile)
-        success_msg = f"AI analysis completed successfully. {observation}"
-        store.set_observation(success_msg)
+        store.set_observation(observation)
         store.set_status("completed")
         print(f"Background processing completed for {filename}")
     except Exception as e:
