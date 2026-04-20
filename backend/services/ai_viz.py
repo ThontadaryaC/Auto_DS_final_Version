@@ -57,6 +57,16 @@ def generate_ai_dashboard(df: pd.DataFrame, filename: str = "Unknown Dataset", s
         print(f"Error generating AI dashboard: {e}")
         return {"charts": {}, "report": "Failed to generate AI Analysis for this dashboard."}
 
+def generate_view_report(df: pd.DataFrame, view_type: str, additional_context: str = "") -> str:
+    """Generates a contextual AI report for specific views like Insights or Prediction."""
+    cols_info = {col: str(dtype) for col, dtype in df.dtypes.items()}
+    
+    context_prompts = {
+        "insights": "Analyze the basic statistical insights of this data. Provide a professional context-aware summary of the bar chart findings emphasizing key distributions and outliers.",
+        "prediction": f"Explain the future trends based on the machine learning forecast provided for {additional_context} steps. Focus on confidence levels and proactive business advice.",
+        "dashboard": "Provide a high-level summary of the key performance indicators and patterns observed in the interactive dashboard."
+    }
+
     # NEW: Web Research for Context
     industry_context = "No additional context available."
     try:
