@@ -8,12 +8,18 @@ def get_llm():
     """Initializes and returns the LangChain LLM instance configured for Google Gemini API."""
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        raise ValueError("GEMINI_API_KEY is not set in environment variables.")
+        # Instead of raising ValueError here which crashes bootstrap, 
+        # we can raise a clear exception that routers can catch
+        raise KeyError("GEMINI_API_KEY_MISSING")
         
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
-        google_api_key=api_key,
-        temperature=0.1,
-        max_output_tokens=2048,
-    )
-    return llm
+    try:
+        llm = ChatGoogleGenerativeAI(
+            model="gemini-2.5-flash",
+            google_api_key=api_key,
+            temperature=0.1,
+            max_output_tokens=2048,
+        )
+        return llm
+    except Exception as e:
+        print(f"Failed to initialize Gemini LLM: {e}")
+        raise ConnectionError("GEMINI_INITIALIZATION_FAILED")

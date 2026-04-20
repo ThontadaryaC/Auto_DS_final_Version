@@ -91,9 +91,13 @@ async def get_view_report(view_type: str = Body(..., embed=True), additional_con
     df = store.get_data()
     if df is None:
         raise HTTPException(status_code=400, detail="No dataset uploaded")
-        
-    report = generate_view_report(df, view_type, additional_context)
-    return {"report": report}
+    
+    try:
+        report = generate_view_report(df, view_type, additional_context)
+        return {"report": report}
+    except Exception as e:
+        print(f"Endpoint Error in /report: {e}")
+        return {"report": f"Backend Error: {str(e)}"}
 
 @router.get("/analyze/strategy")
 async def get_ml_strategy():

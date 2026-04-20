@@ -3,6 +3,7 @@ import json
 from agent.llm_config import get_llm
 from langchain_core.messages import HumanMessage
 import numpy as np
+from services.scraper import research_industry_context
 
 def generate_ai_dashboard(df: pd.DataFrame, filename: str = "Unknown Dataset", semantic_profile: dict = None) -> dict:
     """Uses Gemini to analyze data and generate diverse Plotly visualizations and a report based on semantic profile."""
@@ -56,24 +57,27 @@ def generate_ai_dashboard(df: pd.DataFrame, filename: str = "Unknown Dataset", s
         print(f"Error generating AI dashboard: {e}")
         return {"charts": {}, "report": "Failed to generate AI Analysis for this dashboard."}
 
-def generate_view_report(df: pd.DataFrame, view_type: str, additional_context: str = "") -> str:
-    """Generates a contextual AI report for specific views like Insights or Prediction."""
-    llm = get_llm()
-    
-    sample_data = df.head(5).to_dict(orient='records')
-    cols_info = {col: str(dtype) for col, dtype in df.dtypes.items()}
-    
-    context_prompts = {
-        "insights": "Analyze the basic statistical insights of this data. Provide a professional context-aware summary of the bar chart findings emphasizing key distributions and outliers.",
-        "prediction": f"Explain the future trends based on the machine learning forecast provided for {additional_context} steps. Focus on confidence levels and proactive business advice.",
-        "dashboard": "Provide a high-level summary of the key performance indicators and patterns observed in the interactive dashboard."
-    }
-    
+    # NEW: Web Research for Context
+    industry_context = "No additional context available."
+    try:
+        # Generate a search query based on columns and view type
+        search_query = f"Latest industry trends and news for dataset with columns {list(df.columns[:5])} focus on {view_type}"
+        industry_context = research_industry_context(search_query)
+    except Exception as scrape_err:
+        print(f"Bypassing web research due to error: {scrape_err}")
+
     task_prompt = context_prompts.get(view_type.lower(), "Provide a holistic data analysis report.")
+    
+    # FIX: Use to_json to handle Timestamps properly
+    sample_data_json = df.head(5).to_json(orient='records', date_format='iso')
     
     prompt = f"""
     You are a Principal Data Scientist and Industry Specialist.
-    Data Sample: {json.dumps(sample_data)}
+    
+    INDUSTRY CONTEXT (Web Researched):
+    {industry_context}
+    
+    Data Sample (JSON): {sample_data_json}
     Dataset Architecture: {json.dumps(cols_info)}
     
     GOAL: {task_prompt}
@@ -91,11 +95,16 @@ def generate_view_report(df: pd.DataFrame, view_type: str, additional_context: s
     """
     
     try:
+        llm = get_llm()
         response = llm.invoke([HumanMessage(content=prompt)])
         return response.content.strip()
+    except KeyError:
+        return "AI Report Generation Failed: GEMINI_API_KEY is missing. Please configure it in your backend environment."
+    except ConnectionError:
+        return "AI Report Generation Failed: Could not connect to Gemini API. Please check your internet or API limits."
     except Exception as e:
         print(f"Error generating AI report for {view_type}: {e}")
-        return "AI was unable to generate a report for this view."
+        return f"AI was unable to generate a report for this view. (Error: {str(e)})"
 
 def ai_observe_data(df: pd.DataFrame, filename: str = "Unknown Dataset", semantic_profile: dict = None) -> str:
     """Uses Gemini to provide a natural language summary/observation of the dataset."""

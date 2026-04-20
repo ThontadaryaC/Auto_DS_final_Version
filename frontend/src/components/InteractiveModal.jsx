@@ -45,7 +45,8 @@ const InteractiveModal = ({ isOpen, onClose, type, data, loading, theme, onUpdat
       setLocalReport(res.data.report);
     } catch (err) {
       console.error("Error generating report", err);
-      setLocalReport("Error generating report. Please check the backend connection.");
+      const errorMsg = err.response?.data?.detail || err.response?.data?.report || "Error generating report. Please check the backend connection.";
+      setLocalReport(errorMsg);
     } finally {
       setGeneratingReport(false);
     }
@@ -397,7 +398,10 @@ const InteractiveModal = ({ isOpen, onClose, type, data, loading, theme, onUpdat
                         {generatingReport ? (
                           <>
                             <Loader2 className="w-8 h-8 animate-spin mb-3" />
-                            <p className="text-sm font-medium animate-pulse">Gemini is analyzing the data...</p>
+                            <p className="text-sm font-medium animate-pulse text-center">
+                              AI is researching the web for industry context <br/>
+                              and analyzing your dataset...
+                            </p>
                           </>
                         ) : (
                           <>
