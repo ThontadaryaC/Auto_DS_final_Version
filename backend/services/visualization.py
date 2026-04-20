@@ -7,6 +7,9 @@ from utils.viz_utils import get_seaborn_colors, apply_premium_style
 
 def generate_insights_chart(df: pd.DataFrame) -> dict:
     """Generates a premium interactive bar chart for insights using Seaborn-style colors."""
+    if df.empty:
+        return {"data": [], "layout": {"title": "No data available"}}
+
     cat_col = None
     num_col = None
     for col in df.columns:
@@ -19,31 +22,72 @@ def generate_insights_chart(df: pd.DataFrame) -> dict:
                 
     colors = get_seaborn_colors("mako", 10)
     
-    if cat_col and num_col:
-        summary = df.groupby(cat_col)[num_col].sum().reset_index().sort_values(by=num_col, ascending=False).head(10)
-        fig = px.bar(
-            summary, x=cat_col, y=num_col, 
-            title=f"Top {num_col} by {cat_col}",
-            color=cat_col,
-            color_discrete_sequence=colors
-        )
-    else:
-        col = df.columns[0]
-        summary = df[col].value_counts().reset_index().head(10)
-        summary.columns = [col, 'Count']
-        fig = px.bar(
-            summary, x=col, y='Count', 
-            title=f"Frequency analysis: {col}",
-            color=col,
-            color_discrete_sequence=colors
-        )
+    try:
+        if cat_col and num_col:
+            summary = df.groupby(cat_col)[num_col].sum().reset_index().sort_values(by=num_col, ascending=False).head(10)
+            fig = px.bar(
+                summary, x=cat_col, y=num_col, 
+                title=f"Top {num_col} by {cat_col}",
+                color=cat_col,
+                color_discrete_sequence=colors
+            )
+        else:
+            col = df.columns[0]
+            summary = df[col].value_counts().reset_index().head(10)
+            summary.columns = [col, 'Count']
+            fig = px.bar(
+                summary, x=col, y='Count', 
+                title=f"Frequency analysis: {col}",
+                color=col,
+                color_discrete_sequence=colors
+            )
+            
+        apply_premium_style(fig)
+        return json.loads(fig.to_json())
+    except Exception as e:
+        print(f"Error in generate_insights_chart: {e}")
+        return {"data": [], "layout": {"title": f"Visualization error: {str(e)}"}}
+
+def generate_strategy_chart(df: pd.DataFrame, strategy: dict) -> dict:
+    """Generates a high-level strategic overview chart based on the AI plan."""
+    if df.empty:
+        return {"data": [], "layout": {"title": "No data for strategy map"}}
+
+    viz_config = strategy.get("strategy_viz", {})
+    v_type = viz_config.get("type", "bar").lower()
+    
+    try:
+        num_cols = df.select_dtypes(include='number').columns.tolist()
         
-    apply_premium_style(fig)
-    return json.loads(fig.to_json())
+        if v_type == "radar" and len(num_cols) >= 3:
+            categories = num_cols[:5]
+            values = df[categories].mean().tolist()
+            fig = go.Figure(data=go.Scatterpolar(
+                r=values,
+                theta=categories,
+                fill='toself',
+                marker=dict(color='#6366f1')
+            ))
+            fig.update_layout(polar=dict(radialaxis=dict(visible=True)), title="Strategic Attribute Matrix")
+        elif v_type == "scatter" and len(num_cols) >= 2:
+            fig = px.scatter(df, x=num_cols[0], y=num_cols[1], title=f"Strategic Focus: {viz_config.get('data_focus', 'Relationship Overview')}")
+        else:
+            cardinality = df.nunique().sort_values(ascending=False).head(10)
+            fig = px.bar(
+                x=cardinality.index, y=cardinality.values,
+                title="Dataset Cardinality Map (Strategic Overview)",
+                labels={'x': 'Feature', 'y': 'Unique Values'},
+                color_discrete_sequence=['#6366f1']
+            )
+            
+        apply_premium_style(fig)
+        return json.loads(fig.to_json())
+    except Exception as e:
+        print(f"Error in generate_strategy_chart: {e}")
+        return generate_insights_chart(df)
 
 def generate_dashboard(df: pd.DataFrame, semantic_profile: dict = None) -> dict:
     """Generate a comprehensive suite of PowerBI-style charts using semantic intelligence."""
-    # Extract semantic info
     date_cols = []
     num_cols = []
     cat_cols = []
@@ -61,7 +105,6 @@ def generate_dashboard(df: pd.DataFrame, semantic_profile: dict = None) -> dict:
             elif stype in ["Category", "Geographic"]:
                 cat_cols.append(name)
     
-    # Fallback to dtypes if semantic profile is missing or incomplete
     if not num_cols:
         num_cols = df.select_dtypes(include='number').columns.tolist()
     if not cat_cols:
@@ -74,9 +117,8 @@ def generate_dashboard(df: pd.DataFrame, semantic_profile: dict = None) -> dict:
     flare_colors = get_seaborn_colors("flare", 5)
     rocket_colors = get_seaborn_colors("rocket", 10)
     
-    # 1. AI RECOMMENDED PLOTS (Highest Priority)
     if semantic_profile and "recommended_plots" in semantic_profile:
-        for i, rec in enumerate(semantic_profile["recommended_plots"][:2]): # Top 2 AI recs
+        for i, rec in enumerate(semantic_profile["recommended_plots"][:2]):
             try:
                 ptype = rec["type"].lower()
                 x, y = rec["x"], rec["y"]
@@ -97,11 +139,9 @@ def generate_dashboard(df: pd.DataFrame, semantic_profile: dict = None) -> dict:
             except Exception:
                 continue
 
-    # 2. TREND OVER TIME (Using semantic Date)
     if date_cols and num_cols:
         time_col = date_cols[0]
         val_col = num_cols[0]
-        # Resample or just sort for better line charts
         trend_data = df.sort_values(by=time_col).copy()
         fig_trend = px.line(
             trend_data, x=time_col, y=val_col,
@@ -111,7 +151,6 @@ def generate_dashboard(df: pd.DataFrame, semantic_profile: dict = None) -> dict:
         apply_premium_style(fig_trend)
         charts['time_series'] = json.loads(fig_trend.to_json())
 
-    # 3. DISTRIBUTION (Histogram)
     if num_cols:
         fig_hist = px.histogram(
             df, x=num_cols[0], 
@@ -122,9 +161,7 @@ def generate_dashboard(df: pd.DataFrame, semantic_profile: dict = None) -> dict:
         apply_premium_style(fig_hist)
         charts['histogram'] = json.loads(fig_hist.to_json())
 
-    # 4. COMPOSITION (Pie/Donut)
     if cat_cols:
-        # Find best cat col (not unique, but not too many)
         best_cat = cat_cols[0]
         for c in cat_cols:
             if 2 <= df[c].nunique() <= 10:
@@ -142,7 +179,6 @@ def generate_dashboard(df: pd.DataFrame, semantic_profile: dict = None) -> dict:
         apply_premium_style(fig_pie)
         charts['pie'] = json.loads(fig_pie.to_json())
 
-    # 5. RELATIONSHIP (Scatter)
     if len(num_cols) >= 2:
         fig_scatter = px.scatter(
             df, x=num_cols[0], y=num_cols[1], 

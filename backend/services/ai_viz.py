@@ -14,25 +14,31 @@ def generate_ai_dashboard(df: pd.DataFrame, filename: str = "Unknown Dataset", s
     cols_info = {col: str(dtype) for col, dtype in df.dtypes.items()}
     
     prompt = f"""
-    You are a Senior Data Scientist.
+    You are a Lead Data Science Consultant and Strategist.
     Dataset Name: {filename}
     Semantic Profile: {json.dumps(semantic_profile) if semantic_profile else "Not available"}
     
     Raw Schema: {json.dumps(cols_info)} 
     Sample Data (5 rows): {sample_data_json}
     
-    TASK: Generate 4 interactive Plotly charts and a professional analysis summary.
-    - RECOGNITION: Ensure you acknowledge the dataset "{filename}" domain.
-    - ACCURACY: Use the Semantic Profile to pick the right column types (e.g. use Dates for X-axis Trend lines).
-    - COLORS: Use professional Seaborn palettes. 
-    - REPORT: Provide a professional analysis based on the recognized context.
+    TASK: Generate 4 interactive Plotly charts and a comprehensive, multi-page professional analysis report.
+    - RECOGNITION: Deeply analyze the "{filename}" domain. Connect semantic types to real-world business entities.
+    - ACCURACY: Use the Semantic Profile to pick the right column types for high-fidelity visualizations.
+    - COLORS: Use professional Seaborn palettes (e.g., mako, flare).
+    
+    REPORT STRUCTURE (Minimum 1500 words for depth):
+    1. EXECUTIVE SUMMARY: A high-level overview of the dataset's strategic value.
+    2. DATA ARCHITECTURE ANALYSIS: Detailed breakdown of the schema, quality, and semantic relationships.
+    3. DESCRIPTIVE INSIGHTS: Deep dive into distributions, correlations, and composition.
+    4. ANOMALY & OUTLIER DETECTION: Identifying patterns that deviate from the norm and their implications.
+    5. STRATEGIC RECOMMENDATIONS: Proactive business advice based on the data findings.
     
     Return ONLY a JSON object:
     {{
       "charts": {{ "id1": {{ "data": [...], "layout": {{...}} }}, ... }},
-      "report": "Analysis text"
+      "report": "EXTREMELY DETAILED ANALYSIS TEXT (Multi-paragraph, formatted for a 2-page printout)"
     }}
-    NO MARKDOWN. NO COMMENTS. VALID JSON ONLY.
+    NO MARKDOWN WRAPPING. NO COMMENTS. VALID JSON ONLY.
     """
     
     try:
@@ -66,14 +72,22 @@ def generate_view_report(df: pd.DataFrame, view_type: str, additional_context: s
     task_prompt = context_prompts.get(view_type.lower(), "Provide a holistic data analysis report.")
     
     prompt = f"""
-    You are a Lead Data Science Consultant for a Fortune 500 company.
+    You are a Principal Data Scientist and Industry Specialist.
     Data Sample: {json.dumps(sample_data)}
     Dataset Architecture: {json.dumps(cols_info)}
     
     GOAL: {task_prompt}
     
-    Deliver a professional, insightful, and proactive report (3-4 sentences). 
-    Focus on business value and strategic observations.
+    Deliver an exhaustive, sophisticated, and proactive report designed to be at least 2 pages in length when printed.
+    
+    REQUIRED SECTIONS:
+    - DETAILED CONTEXTUAL OVERVIEW: Scope and scale of the data.
+    - GRANULAR STATISTICAL BREAKDOWN: Deep analysis of variables and their interactions.
+    - PATTERN RECOGNITION & SYNERGY: How different data segments influence each other.
+    - FORECASTING & RISK ASSESSMENT: Potential future outcomes and mitigation strategies.
+    - STRATEGIC ROADMAP: Priority actions based on the insights discovered.
+    
+    Tone: Highly professional, Data-driven, and Strategic.
     """
     
     try:
@@ -93,7 +107,7 @@ def ai_observe_data(df: pd.DataFrame, filename: str = "Unknown Dataset", semanti
     cols_info = {col: str(dtype) for col, dtype in df.dtypes.items()}
     
     prompt = f"""
-    You are an AI Data Science Strategist.
+    You are a Global AI Data Science Strategist.
     Dataset Name: {filename}
     
     Initial AI Recognition:
@@ -106,12 +120,12 @@ def ai_observe_data(df: pd.DataFrame, filename: str = "Unknown Dataset", semanti
     Sample Records: {sample_data_json}
     
     TASK:
-    Provide a professional, "human-like" understanding of this dataset.
-    - START by explicitly acknowledging your recognition of the dataset name "{filename}" and what it tells you about the context.
-    - Then, connect this to the actual content you see in the columns and sample records.
-    - Explain what the content represents in business terms.
-    - Highlight 1-2 key patterns or relationships that are immediately visible.
-    - Keep it concise (3-5 sentences).
+    Provide a comprehensive, human-like strategic observation of this dataset (Target 1-2 pages of text).
+    - START by explicitly acknowledging your deep recognition of the dataset "{filename}" and its industry context.
+    - CONNECT the raw columns to actual business objects (e.g., 'revenue' isn't just a float, it's a financial performance metric).
+    - ANALYZE the sample records for immediate red flags or golden opportunities.
+    - SYNTHESIZE at least 5 key observations about the data structure and potential latent patterns.
+    - Use a tone that is both brilliant and accessible.
     """
     
     try:

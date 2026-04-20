@@ -255,20 +255,65 @@ const AdvancedAnalysis = ({ onClose }) => {
                 )}
               </div>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center opacity-20">
-                <div className="relative mb-8">
-                   <div className="absolute inset-0 bg-brand-500/10 blur-3xl animate-pulse" />
-                   <Cpu className="w-24 h-24 text-slate-700 relative" />
-                </div>
-                <div className="text-center max-w-md">
-                   <h3 className="text-2xl font-black text-slate-700 uppercase tracking-tighter">Command Center Standby</h3>
-                   <p className="text-xs font-bold text-slate-700 uppercase tracking-widest mt-3 leading-relaxed">
-                     Awaiting tactical signal from the strategic brain. Select an execution path from the left control pane to begin.
-                   </p>
-                   <div className="mt-10 flex items-center justify-center gap-2 text-brand-500 font-black italic text-sm">
-                      <ArrowRight className="w-6 h-6 animate-bounce" /> Tactical Signal Required
-                   </div>
-                </div>
+              <div className="flex-1 flex flex-col items-center justify-center p-8 space-y-8">
+                {strategy?.strategy_chart ? (
+                  <div className="w-full space-y-8 animate-in fade-in zoom-in-95 duration-1000">
+                    <div className="text-center">
+                      <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Strategic Overview Blueprint</h3>
+                      <p className="text-[10px] font-black text-brand-500 uppercase tracking-[0.3em] mt-2">Neural Scan complete. Analysis environment ready for tactical deployment.</p>
+                    </div>
+                    
+                    <div className="p-6 bg-white/[0.02] border border-white/5 rounded-[2.5rem] h-[450px] shadow-2xl relative group">
+                      <div className="absolute top-6 right-8 z-10 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-brand-500 rounded-full animate-pulse" />
+                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Master Brain Projection</span>
+                      </div>
+                      <PlotComponent
+                        data={strategy.strategy_chart.data}
+                        layout={{ 
+                          ...strategy.strategy_chart.layout,
+                          autosize: true,
+                          paper_bgcolor: 'transparent',
+                          plot_bgcolor: 'transparent',
+                          font: { color: '#64748b', family: "'Inter', sans-serif" },
+                          margin: { t: 60, r: 40, l: 60, b: 60 },
+                          xaxis: { ...(strategy.strategy_chart.layout.xaxis || {}), gridcolor: '#1e293b' },
+                          yaxis: { ...(strategy.strategy_chart.layout.yaxis || {}), gridcolor: '#1e293b' }
+                        }}
+                        useResizeHandler={true}
+                        style={{ width: '100%', height: '100%' }}
+                        config={{ responsive: true, displayModeBar: false }}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-center gap-8 pt-4">
+                       <div className="flex items-center gap-3 bg-white/[0.03] px-4 py-2 rounded-full border border-white/5">
+                          <div className="w-2 h-2 bg-emerald-500 rounded-full" />
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Signal Integrity 100%</span>
+                       </div>
+                       <div className="flex items-center gap-3 bg-white/[0.03] px-4 py-2 rounded-full border border-white/5">
+                          <div className="w-2 h-2 bg-brand-500 rounded-full" />
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tactical Ready</span>
+                       </div>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="relative mb-8">
+                       <div className="absolute inset-0 bg-brand-500/10 blur-3xl animate-pulse" />
+                       <Cpu className="w-24 h-24 text-slate-700 relative" />
+                    </div>
+                    <div className="text-center max-w-md">
+                       <h3 className="text-2xl font-black text-slate-700 uppercase tracking-tighter">Command Center Standby</h3>
+                       <p className="text-xs font-bold text-slate-700 uppercase tracking-widest mt-3 leading-relaxed">
+                         Awaiting tactical signal from the strategic brain. Select an execution path from the left control pane to begin.
+                       </p>
+                       <div className="mt-10 flex items-center justify-center gap-2 text-brand-500 font-black italic text-sm">
+                          <ArrowRight className="w-6 h-6 animate-bounce" /> Tactical Signal Required
+                       </div>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>

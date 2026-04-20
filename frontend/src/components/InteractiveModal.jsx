@@ -92,10 +92,22 @@ const InteractiveModal = ({ isOpen, onClose, type, data, loading, theme, onUpdat
     if (localReport) {
       pdf.addPage();
       pdf.setFontSize(18);
-      pdf.text('AI Analysis Summary', 10, 20);
-      pdf.setFontSize(11);
-      const splitText = pdf.splitTextToSize(localReport, pdfWidth - 20);
-      pdf.text(splitText, 10, 35);
+      pdf.setTextColor(theme === 'dark' ? '#111827' : '#000000'); // PDF is usually white background
+      pdf.text('Comprehensive AI Strategic Analysis', 15, 20);
+      
+      pdf.setFontSize(10);
+      const splitText = pdf.splitTextToSize(localReport, pdfWidth - 30);
+      let y = 35;
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      
+      splitText.forEach((line) => {
+        if (y > pageHeight - 20) {
+          pdf.addPage();
+          y = 20;
+        }
+        pdf.text(line, 15, y);
+        y += 6;
+      });
     }
     
     pdf.save(`AutoDS_AI_${type}_Report.pdf`);
@@ -400,18 +412,21 @@ const InteractiveModal = ({ isOpen, onClose, type, data, loading, theme, onUpdat
                         )}
                       </div>
                     ) : (
-                      <div className="prose dark:prose-invert max-w-none">
-                        <p className="text-gray-700 dark:text-gray-300 leading-relaxed italic border-l-4 border-brand-500 pl-6 py-2">
-                          "{localReport}"
-                        </p>
-                        <button 
-                          onClick={handleGenerateReport}
-                          disabled={generatingReport}
-                          className="mt-4 text-xs font-bold text-brand-500 hover:text-brand-600 flex items-center gap-1 transition-colors"
-                        >
-                          {generatingReport ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
-                          Regenerate Report
-                        </button>
+                      <div className="prose dark:prose-invert max-w-none max-h-[600px] overflow-y-auto custom-scrollbar pr-4">
+                        <div className="text-gray-700 dark:text-gray-300 leading-relaxed space-y-4 whitespace-pre-wrap text-base font-medium">
+                          {localReport}
+                        </div>
+                        <div className="mt-8 pt-6 border-t border-brand-200 dark:border-brand-800 flex items-center justify-between">
+                           <p className="text-[10px] font-black text-brand-500 uppercase tracking-widest">End of Master Analysis</p>
+                           <button 
+                             onClick={handleGenerateReport}
+                             disabled={generatingReport}
+                             className="text-xs font-bold text-brand-500 hover:text-brand-600 flex items-center gap-1 transition-colors"
+                           >
+                             {generatingReport ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                             Regenerate Detailed Report
+                           </button>
+                        </div>
                       </div>
                     )}
                   </div>

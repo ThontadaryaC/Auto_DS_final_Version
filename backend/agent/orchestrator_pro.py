@@ -48,6 +48,11 @@ def generate_strategic_plan(df: pd.DataFrame, filename: str = "Unknown", semanti
       "automl": {{
         "target_col": "most_important_variable",
         "task_type": "regression/classification/timeseries"
+      }},
+      "strategy_viz": {{
+        "type": "radar/bar/scatter",
+        "data_focus": "e.g. Volume vs Complexity",
+        "reason": "Why this visualization matters for strategy"
       }}
     }}
     NO MARKDOWN. VALID JSON ONLY.

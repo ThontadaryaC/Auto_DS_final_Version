@@ -3,7 +3,7 @@ from core.store import store
 from core.database import get_upload_history, get_upload_by_id, clear_upload_history
 from utils.file_parser import parse_file
 from services.data_processing import clean_dataframe, get_insights
-from services.visualization import generate_insights_chart, generate_dashboard
+from services.visualization import generate_insights_chart, generate_dashboard, generate_strategy_chart
 from services.ai_viz import generate_ai_dashboard, generate_view_report, ai_observe_data
 from services.ml import predict_future_trends
 from services.ml_advanced import perform_clustering, detect_anomalies
@@ -104,6 +104,11 @@ async def get_ml_strategy():
     filename = store.get_filename() or "Unknown"
     profile = store.get_semantic_profile()
     strategy = generate_strategic_plan(df, filename, profile)
+    
+    # NEW: Generate a strategic map visualization
+    strategy_chart = generate_strategy_chart(df, strategy)
+    strategy["strategy_chart"] = strategy_chart
+    
     return strategy
 
 @router.post("/analyze/clustering")
