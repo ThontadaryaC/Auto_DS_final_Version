@@ -32,6 +32,12 @@ def background_processing(cleaned_df, filename, file_path, upload_id):
         # 4. AI Observation Summary
         observation = ai_observe_data(cleaned_df, filename, semantic_profile)
         store.set_observation(observation)
+        
+        # 5. Persist AI results to TiDB
+        from core.database import update_upload_ai_data
+        if upload_id:
+            update_upload_ai_data(upload_id, semantic_profile, observation)
+            
         store.set_status("completed")
         print(f"Background processing completed for {filename}")
     except Exception as e:
@@ -68,6 +74,11 @@ async def upload_file(background_tasks: BackgroundTasks, file: UploadFile = File
     
     # Log to persistent TiDB database
     upload_id = log_upload(file.filename, file_path, len(cleaned_df))
+    
+    if upload_id is None:
+        print(f"CRITICAL: Failed to log upload {file.filename} to TiDB. Dataset will not appear in registry.")
+    else:
+        print(f"Logged upload {file.filename} to TiDB with ID: {upload_id}")
     
     # NEW: Trigger slow tasks in background
     store.set_status("processing")

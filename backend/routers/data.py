@@ -33,15 +33,45 @@ async def load_file_from_history(file_id: int):
         
     cleaned_df = clean_dataframe(df)
     
-    # NEW: AI Semantic Profiling
-    from services.semantic_logic import profile_dataset_with_ai
-    semantic_profile = profile_dataset_with_ai(cleaned_df, record['filename'])
+    # Check if AI analysis results are already stored in TiDB
+    import json
+    semantic_profile = None
+    observation = None
+    
+    if record.get('semantic_profile'):
+        print(f"Loading stored AI profile for {record['filename']}")
+        try:
+            # TiDB returns JSON as dict or string depending on driver/config
+            if isinstance(record['semantic_profile'], str):
+                semantic_profile = json.loads(record['semantic_profile'])
+            else:
+                semantic_profile = record['semantic_profile']
+        except Exception:
+            semantic_profile = None
+
+    if record.get('observation'):
+        observation = record['observation']
+
+    # If results are missing, run analysis (for legacy records or first load)
+    if not semantic_profile:
+        print(f"AI results missing for {record['filename']}. Performing analysis...")
+        from services.semantic_logic import profile_dataset_with_ai
+        semantic_profile = profile_dataset_with_ai(cleaned_df, record['filename'])
+        
+        # Calculate observation as well
+        from services.ai_viz import ai_observe_data
+        observation = ai_observe_data(cleaned_df, record['filename'], semantic_profile)
+        
+        # Persist these results for future loads
+        from core.database import update_upload_ai_data
+        update_upload_ai_data(file_id, semantic_profile, observation)
     
     store.set_data(cleaned_df, record['filename'])
     store.set_semantic_profile(semantic_profile)
+    store.set_observation(observation)
+    store.set_status("completed")
     
     insights = get_insights(cleaned_df)
-    observation = ai_observe_data(cleaned_df, record['filename'], semantic_profile)
     
     return {
         "message": f"Successfully loaded {record['filename']} from history",

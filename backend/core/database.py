@@ -21,6 +21,27 @@ def log_upload(filename, file_path, record_count):
     except Error as e:
         print(f"Error logging upload to TiDB: {e}")
         return None
+    finally:
+        if 'cursor' in locals(): cursor.close()
+        if 'conn' in locals(): conn.close()
+
+def update_upload_ai_data(upload_id, semantic_profile, observation):
+    conn = tidb_manager.get_connection()
+    if not conn:
+        return False
+    
+    try:
+        import json
+        cursor = conn.cursor()
+        profile_json = json.dumps(semantic_profile)
+        query = "UPDATE uploads SET semantic_profile = %s, observation = %s WHERE id = %s"
+        cursor.execute(query, (profile_json, observation, upload_id))
+        conn.commit()
+        return True
+    except Error as e:
+        print(f"Error updating AI data in TiDB: {e}")
+        return False
+    finally:
         if 'cursor' in locals(): cursor.close()
         if 'conn' in locals(): conn.close()
 
