@@ -1,4 +1,6 @@
 from fastapi import APIRouter, HTTPException, Body
+from pydantic import BaseModel
+from typing import List, Optional
 from core.store import store
 from core.database import get_upload_history, get_upload_by_id, clear_upload_history
 from utils.file_parser import parse_file
@@ -10,7 +12,20 @@ from services.ml_advanced import perform_clustering, detect_anomalies
 from services.automl_pro import run_advanced_automl
 from agent.orchestrator_pro import generate_strategic_plan
 
+
 router = APIRouter()
+
+# Request Models for Advanced Analysis
+class ClusteringRequest(BaseModel):
+    n_clusters: Optional[int] = None
+    features: Optional[List[str]] = None
+
+class AnomalyRequest(BaseModel):
+    contamination: float = 0.05
+
+class AutoMLRequest(BaseModel):
+    target_col: str
+    task_type: str = "auto"
 
 @router.get("/history")
 async def get_history():
@@ -157,35 +172,35 @@ async def get_ml_strategy():
     return strategy
 
 @router.post("/analyze/clustering")
-async def run_clustering_analysis(n_clusters: int = None, features: list = None):
+async def run_clustering_analysis(req: ClusteringRequest):
     df = store.get_data()
     if df is None:
         raise HTTPException(status_code=400, detail="No dataset uploaded")
     
-    result = perform_clustering(df, n_clusters=n_clusters, features=features)
+    result = perform_clustering(df, n_clusters=req.n_clusters, features=req.features)
     if "error" in result:
         raise HTTPException(status_code=400, detail=result["error"])
     return result
 
 @router.post("/analyze/anomaly")
-async def run_anomaly_analysis(contamination: float = 0.05):
+async def run_anomaly_analysis(req: AnomalyRequest):
     df = store.get_data()
     if df is None:
         raise HTTPException(status_code=400, detail="No dataset uploaded")
     
-    result = detect_anomalies(df, contamination=contamination)
+    result = detect_anomalies(df, contamination=req.contamination)
     if "error" in result:
         raise HTTPException(status_code=400, detail=result["error"])
     return result
 
 @router.post("/analyze/automl")
-async def run_pro_automl(target_col: str, task_type: str = "auto"):
+async def run_pro_automl(req: AutoMLRequest):
     df = store.get_data()
     if df is None:
         raise HTTPException(status_code=400, detail="No dataset uploaded")
     
     profile = store.get_semantic_profile()
-    result = run_advanced_automl(df, target_col=target_col, task_type=task_type, semantic_profile=profile)
+    result = run_advanced_automl(df, target_col=req.target_col, task_type=req.task_type, semantic_profile=profile)
     if "error" in result:
         raise HTTPException(status_code=400, detail=result["error"])
     return result

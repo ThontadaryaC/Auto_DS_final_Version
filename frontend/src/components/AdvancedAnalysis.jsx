@@ -12,15 +12,17 @@ import {
   Activity,
   ArrowRight,
   ShieldCheck,
-  Cpu
+  Cpu,
+  AlertTriangle
 } from 'lucide-react';
 
 const AdvancedAnalysis = ({ onClose }) => {
   const [strategy, setStrategy] = useState(null);
   const [loadingStrategy, setLoadingStrategy] = useState(true);
   const [activeAnalysis, setActiveAnalysis] = useState(null); // 'clustering', 'anomaly', 'automl'
-  const [analysisResult, setAnalysisResult] = useState(null);
+   const [analysisResult, setAnalysisResult] = useState(null);
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
+  const [error, setError] = useState(null);
 
   // Vite compatibility fix for CommonJS react-plotly.js module export
   const PlotComponent = typeof Plot === 'object' && Plot.default ? Plot.default : Plot;
@@ -31,11 +33,13 @@ const AdvancedAnalysis = ({ onClose }) => {
 
   const fetchStrategy = async () => {
     setLoadingStrategy(true);
+    setError(null);
     try {
       const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/analyze/strategy`);
       setStrategy(res.data);
     } catch (err) {
       console.error("Strategy fetch failed", err);
+      setError("Strategic Mapping failed. Ensure a dataset is uploaded and the Master Brain is online.");
     } finally {
       setLoadingStrategy(false);
     }
@@ -45,6 +49,7 @@ const AdvancedAnalysis = ({ onClose }) => {
     setActiveAnalysis(type);
     setLoadingAnalysis(true);
     setAnalysisResult(null);
+    setError(null);
     try {
       let endpoint = '';
       let payload = {};
@@ -67,6 +72,7 @@ const AdvancedAnalysis = ({ onClose }) => {
       setAnalysisResult(res.data);
     } catch (err) {
       console.error(`${type} analysis failed`, err);
+      setError(`${type.toUpperCase()} execution failed: ${err.response?.data?.detail || "Signal timeout"}`);
     } finally {
       setLoadingAnalysis(false);
     }
@@ -184,7 +190,15 @@ const AdvancedAnalysis = ({ onClose }) => {
           </div>
 
           {/* Execution Environment */}
-          <div className="flex-1 bg-black/40 flex flex-col">
+          <div className="flex-1 bg-black/40 flex flex-col overflow-hidden">
+            {error && (
+              <div className="mx-8 mt-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-center gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0" />
+                <p className="text-xs font-black text-rose-400 uppercase tracking-widest">{error}</p>
+                <button onClick={() => setError(null)} className="ml-auto text-rose-500 hover:text-rose-400 font-bold text-xs uppercase">Dismiss</button>
+              </div>
+            )}
+
             {loadingAnalysis ? (
               <div className="flex-1 flex flex-col items-center justify-center space-y-6 opacity-60">
                 <div className="relative">
