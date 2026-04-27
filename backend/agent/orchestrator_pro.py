@@ -10,33 +10,38 @@ def generate_strategic_plan(df: pd.DataFrame, filename: str = "Unknown", semanti
     """
     llm = get_llm()
     
-    # 1. Prepare Metadata for the LLM
+    # 1. Prepare Enriched Metadata for the LLM
     num_rows = len(df)
-    sample_data_json = df.head(5).to_json(orient='records', date_format='iso')
-    cols_info = {col: str(dtype) for col, dtype in df.dtypes.items()}
+    sample_data_json = df.head(3).to_json(orient='records', date_format='iso')
+    
+    # Create a consolidated view of columns: Name (Dtype) -> Semantic Type
+    semantic_map = {col["name"]: col["semantic_type"] for col in semantic_profile.get("columns", [])} if semantic_profile else {}
+    enriched_schema = json.dumps({col: f"{str(dtype)} [{semantic_map.get(col, 'Unknown')}]" for col, dtype in df.dtypes.items()}, separators=(',', ':'))
     
     prompt = f"""
-    You are a Master AI Data Scientist.
-    Dataset Name: {filename}
-    Semantic Context: {json.dumps(semantic_profile) if semantic_profile else "Not available"}
+    You are a Strategic AI Data Scientist.
+    Dataset: {filename} ({num_rows} rows)
+    Domain: {semantic_profile.get('domain', 'Unknown') if semantic_profile else "N/A"}
     
-    Raw Metadata: {num_rows} rows.
-    Schema: {json.dumps(cols_info)}
-    Sample Data (5 rows): {sample_data_json}
+    SCHEMA: {enriched_schema}
+    SAMPLE: {sample_data_json}
     
     TASK: Analyze the dataset structure and domain. Decide on a 3-part strategic ML plan.
-    Special Instructions: If 'Date' columns are present, prioritize Time-Series or Trend analysis in AutoML. 
-    If IDs are present, ensure they are NOT used as features for Clustering or Anomaly detection.
+    
+    CRITICAL RULES:
+    1. EXCLUSION: Never use columns marked as 'ID', 'Text', 'Email', 'URL', 'Phone', or 'Geographic' (Address) as features for Clustering or Anomaly detection.
+    2. TIME-SERIES: If a 'Date' semantic type is present, and you pick a 'Numeric' or 'Currency' target, prioritize 'timeseries' as the AutoML task_type.
+    3. TARGET SELECTION: Pick the most business-critical column as the AutoML target (e.g., Sales, Price, Churn, Status).
     
     STRATEGY OPTIONS:
-    1. CLUSTERING: Groups similar records. Recommendation: Which features to use?
-    2. ANOMALY: Detects outliers. Recommendation: Contamination rate (0.01 to 0.1)?
-    3. AUTOML: Predicts a column. Recommendation: Best 'Target' column and Task Type?
+    1. CLUSTERING: Recommended features (Exclude IDs/Text). Suggested K.
+    2. ANOMALY: Detect outliers. Recommendation: Contamination rate (0.01 to 0.1)?
+    3. AUTOML: Target selection and task type (regression/classification/timeseries).
     
     Return EXACTLY this JSON structure:
     {{
-      "domain": "Detailed domain name",
-      "thinking": "Professional reasoning (2 sentences max) based on the semantic understanding.",
+      "domain": "Detailed business domain name",
+      "thinking": "Professional reasoning (2 sentences max) explaining how semantic types influenced your choice of target and features.",
       "clustering": {{
         "recommended_features": ["col1", "col2"],
         "suggested_k": 3
@@ -46,7 +51,7 @@ def generate_strategic_plan(df: pd.DataFrame, filename: str = "Unknown", semanti
         "features": ["col1", "col2"]
       }},
       "automl": {{
-        "target_col": "most_important_variable",
+        "target_col": "column_to_predict",
         "task_type": "regression/classification/timeseries"
       }},
       "strategy_viz": {{

@@ -61,7 +61,7 @@ def run_advanced_automl(df: pd.DataFrame, target_col: str, task_type: str = "aut
     )
 
     # 2. Define Models based on task
-    if task_type == "regression":
+    if task_type in ["regression", "timeseries"]:
         models = {
             "Random Forest": RandomForestRegressor(n_estimators=100, random_state=42),
             "Gradient Boosting": GradientBoostingRegressor(n_estimators=100, random_state=42)
