@@ -72,13 +72,15 @@ def generate_strategy_chart(df: pd.DataFrame, strategy: dict) -> dict:
         elif v_type == "scatter" and len(num_cols) >= 2:
             fig = px.scatter(df, x=num_cols[0], y=num_cols[1], title=f"Strategic Focus: {viz_config.get('data_focus', 'Relationship Overview')}")
         else:
-            cardinality = df.nunique().sort_values(ascending=False).head(10)
+            # Default to cardinality bar chart
+            counts = df.nunique().sort_values(ascending=False).head(10)
             fig = px.bar(
-                x=cardinality.index, y=cardinality.values,
-                title="Dataset Cardinality Map (Strategic Overview)",
-                labels={'x': 'Feature', 'y': 'Unique Values'},
+                x=counts.index, y=counts.values,
+                title="Strategic Dataset Overview (Cardinality Map)",
+                labels={'x': 'Feature Name', 'y': 'Unique Count'},
                 color_discrete_sequence=['#6366f1']
             )
+            fig.update_layout(xaxis_title="Features", yaxis_title="Distinct Values")
             
         apply_premium_style(fig)
         return json.loads(fig.to_json())

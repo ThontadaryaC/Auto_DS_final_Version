@@ -12,7 +12,7 @@ def generate_strategic_plan(df: pd.DataFrame, filename: str = "Unknown", semanti
     
     # 1. Prepare Metadata for the LLM
     num_rows = len(df)
-    sample_data = df.head(5).to_dict(orient='records')
+    sample_data_json = df.head(5).to_json(orient='records', date_format='iso')
     cols_info = {col: str(dtype) for col, dtype in df.dtypes.items()}
     
     prompt = f"""
@@ -22,7 +22,7 @@ def generate_strategic_plan(df: pd.DataFrame, filename: str = "Unknown", semanti
     
     Raw Metadata: {num_rows} rows.
     Schema: {json.dumps(cols_info)}
-    Sample Data (5 rows): {json.dumps(sample_data)}
+    Sample Data (5 rows): {sample_data_json}
     
     TASK: Analyze the dataset structure and domain. Decide on a 3-part strategic ML plan.
     Special Instructions: If 'Date' columns are present, prioritize Time-Series or Trend analysis in AutoML. 
@@ -79,5 +79,6 @@ def generate_strategic_plan(df: pd.DataFrame, filename: str = "Unknown", semanti
             "thinking": "Automated fallback strategy initiated due to AI timeout.",
             "clustering": {"recommended_features": num_cols[:2], "suggested_k": 3},
             "anomaly": {"contamination": 0.05, "features": num_cols},
-            "automl": {"target_col": num_cols[-1] if num_cols else "target", "task_type": "auto"}
+            "automl": {"target_col": num_cols[-1] if num_cols else "target", "task_type": "auto"},
+            "strategy_viz": {"type": "bar", "data_focus": "Dataset Cardinality", "reason": "Fallback visualization"}
         }
