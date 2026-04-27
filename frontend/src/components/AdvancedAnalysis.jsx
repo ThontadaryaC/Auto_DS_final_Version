@@ -218,22 +218,35 @@ const AdvancedAnalysis = ({ onClose }) => {
                   <div className="absolute top-4 right-4 z-20">
                     <span className="px-3 py-1 bg-black/40 backdrop-blur-md rounded-full text-[10px] font-black text-slate-500 border border-white/5 group-hover:text-brand-500 transition-colors uppercase tracking-widest">Live Signal Feed</span>
                   </div>
-                  <PlotComponent
-                    data={(analysisResult.main_chart || analysisResult.chart).data}
-                    layout={{ 
-                      ...(analysisResult.main_chart || analysisResult.chart).layout,
-                      autosize: true,
-                      paper_bgcolor: 'transparent',
-                      plot_bgcolor: 'transparent',
-                      font: { color: '#94a3b8', family: "'Inter', sans-serif" },
-                      xaxis: { ...((analysisResult.main_chart || analysisResult.chart).layout.xaxis || {}), gridcolor: '#1e293b' },
-                      yaxis: { ...((analysisResult.main_chart || analysisResult.chart).layout.yaxis || {}), gridcolor: '#1e293b' }
-                    }}
-                    useResizeHandler={true}
-                    style={{ width: '100%', height: '100%' }}
-                    config={{ responsive: true, displayModeBar: false }}
-                  />
+                  {(() => {
+                    const chartObj = analysisResult.main_chart || analysisResult.chart;
+                    if (!chartObj || !chartObj.data) {
+                      return (
+                        <div className="flex items-center justify-center h-full text-slate-500 text-xs font-bold uppercase tracking-widest">
+                          Plotting Engine Initializing...
+                        </div>
+                      );
+                    }
+                    return (
+                      <PlotComponent
+                        data={chartObj.data}
+                        layout={{ 
+                          ...(chartObj.layout || {}),
+                          autosize: true,
+                          paper_bgcolor: 'transparent',
+                          plot_bgcolor: 'transparent',
+                          font: { color: '#94a3b8', family: "'Inter', sans-serif" },
+                          xaxis: { ...(chartObj.layout?.xaxis || {}), gridcolor: '#1e293b' },
+                          yaxis: { ...(chartObj.layout?.yaxis || {}), gridcolor: '#1e293b' }
+                        }}
+                        useResizeHandler={true}
+                        style={{ width: '100%', height: '100%' }}
+                        config={{ responsive: true, displayModeBar: false }}
+                      />
+                    );
+                  })()}
                 </div>
+
 
                 {/* Accessory View (e.g. Elbow Chart) */}
                 {analysisResult.elbow_chart && (

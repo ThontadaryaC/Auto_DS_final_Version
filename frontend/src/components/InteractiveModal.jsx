@@ -122,15 +122,18 @@ const InteractiveModal = ({ isOpen, onClose, type, data, loading, theme, onUpdat
     return traces.map(trace => {
       let newTrace = { ...trace };
       
-      // Apply chart type override ONLY for 'insights'
-      if (type === 'insights') {
+      // Apply chart type override ONLY for 'insights' single chart view
+      // If we have a suite of charts (data.charts), we respect the backend specialization
+      if (type === 'insights' && !data?.charts) {
         newTrace.type = chartType;
       }
       
-      // Apply color theme, BUT protect Pie charts from monolithic coloring
-      if (newTrace.type !== 'pie' && chartKey !== 'pie') {
+      // Apply color theme, BUT protect Pie charts and Heatmaps from monolithic coloring
+      const isMultiColor = ['pie', 'heatmap', 'treemap', 'sunburst'].includes(newTrace.type) || 
+                          ['pie', 'heatmap', 'correlation'].includes(chartKey);
+      
+      if (!isMultiColor) {
         if (newTrace.marker) {
-          // If marker.color is an array (like in bar charts with different categories), don't overwrite it all
           if (!Array.isArray(newTrace.marker.color)) {
             newTrace.marker = { ...newTrace.marker, color: brandColor };
           }
@@ -139,13 +142,14 @@ const InteractiveModal = ({ isOpen, onClose, type, data, loading, theme, onUpdat
         }
       }
 
-      if (chartType === 'scatter' && type === 'insights') {
+      if (chartType === 'scatter' && type === 'insights' && !data?.charts) {
         newTrace.mode = 'lines+markers';
       }
       
       return newTrace;
     });
   };
+
 
   const layout = {
     paper_bgcolor: 'transparent',
@@ -225,12 +229,13 @@ const InteractiveModal = ({ isOpen, onClose, type, data, loading, theme, onUpdat
             </div>
 
             {/* Graph Type section - Only show for Insights where we modify a single chart structure */}
-            {type === 'insights' && (
+            {type === 'insights' && !data?.charts && (
               <div className="space-y-4">
                 <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
                   <BarChart3 className="w-4 h-4" />
                   Chart Structure
                 </h3>
+
                 <div className="space-y-2">
                   {graphTypes.map((gt) => {
                     const Icon = gt.icon;
@@ -338,7 +343,8 @@ const InteractiveModal = ({ isOpen, onClose, type, data, loading, theme, onUpdat
                   {data?.charts ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                       {Object.entries(data.charts).map(([key, chart]) => {
-                        const isWide = ['scatter', 'line', 'bar'].includes(key);
+                        const isWide = ['scatter', 'line', 'bar', 'impact_scatter', 'time_series', 'distribution', 'correlation', 'hierarchy'].includes(key);
+
                         return (
                           <div 
                             key={key} 

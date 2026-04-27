@@ -147,25 +147,71 @@ class TiDBManager:
     @classmethod
     def store_dataset_records(cls, df, filename, upload_id):
         """Stores dataset records in TiDB as JSON for HTAP analysis."""
+        if not upload_id:
+            print(f"Skipping record storage for {filename}: No valid upload_id provided.")
+            return False
+            
         conn = cls.get_connection()
         if not conn:
             return False
             
         try:
             cursor = conn.cursor()
-            # Convert DF to list of JSON strings for batch insertion
-            import json
             # We store each row as a JSON object in the 'data' column
-            records = [ (upload_id, row.to_json()) for _, row in df.iterrows() ]
+            import json
             
-            query = "INSERT INTO dataset_records (upload_id, data) VALUES (%s, %s)"
-            cursor.executemany(query, records)
-            conn.commit()
-            print(f"Successfully stored {len(records)} records in TiDB HTAP.")
+            # Batch insertion in chunks to handle large datasets
+            chunk_size = 1000
+            total_records = len(df)
+            
+            for i in range(0, total_records, chunk_size):
+                chunk = df.iloc[i:i+chunk_size]
+                records = [ (upload_id, row.to_json()) for _, row in chunk.iterrows() ]
+                
+                query = "INSERT INTO dataset_records (upload_id, data) VALUES (%s, %s)"
+                cursor.executemany(query, records)
+                conn.commit() # Commit each chunk
+                
+            print(f"Successfully stored {total_records} records in TiDB HTAP for upload_id: {upload_id}.")
             return True
         except Error as e:
-            print(f"Error storing records in TiDB: {e}")
+            print(f"Error storing records in TiDB for {filename}: {e}")
             return False
+        finally:
+            if 'cursor' in locals(): cursor.close()
+            if 'conn' in locals(): conn.close()
+
+
+    @classmethod
+    def get_dataset_records(cls, upload_id):
+        """Retrieves dataset records from TiDB for a given upload_id."""
+        conn = cls.get_connection()
+        if not conn:
+            return None
+            
+        try:
+            cursor = conn.cursor()
+            query = "SELECT data FROM dataset_records WHERE upload_id = %s ORDER BY id ASC"
+            cursor.execute(query, (upload_id,))
+            rows = cursor.fetchall()
+            
+            if not rows:
+                return None
+                
+            import json
+            import pandas as pd
+            # Each row[0] is a JSON string/object
+            data_list = []
+            for row in rows:
+                if isinstance(row[0], str):
+                    data_list.append(json.loads(row[0]))
+                else:
+                    data_list.append(row[0])
+            
+            return pd.DataFrame(data_list)
+        except Error as e:
+            print(f"Error retrieving records from TiDB: {e}")
+            return None
         finally:
             if 'cursor' in locals(): cursor.close()
             if 'conn' in locals(): conn.close()

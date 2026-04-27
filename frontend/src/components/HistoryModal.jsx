@@ -68,8 +68,9 @@ const HistoryModal = ({ isOpen, onClose, history, onSelect, onClear }) => {
                         {record.record_count} Records
                       </span>
                       <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                        {new Date(record.upload_time).toLocaleDateString()}
+                        {new Date(record.upload_date).toLocaleDateString()}
                       </span>
+
                     </div>
                   </div>
                 </div>

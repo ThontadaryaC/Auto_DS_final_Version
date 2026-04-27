@@ -86,13 +86,18 @@ def clear_upload_history():
     
     try:
         cursor = conn.cursor()
+        # Clear child records first
+        cursor.execute("DELETE FROM dataset_records")
+        # Then clear main registry
         cursor.execute("DELETE FROM uploads")
         conn.commit()
+        print("TiDB Registry and associated dataset records cleared.")
     except Error as e:
         print(f"Error clearing history in TiDB: {e}")
     finally:
         if 'cursor' in locals(): cursor.close()
         if 'conn' in locals(): conn.close()
+
 
 # Initialize on import
 init_db()

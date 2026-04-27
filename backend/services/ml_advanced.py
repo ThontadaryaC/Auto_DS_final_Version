@@ -49,15 +49,21 @@ def perform_clustering(df: pd.DataFrame, n_clusters: int = None, features: list 
     
     # 5. Visualization Preparation
     # If > 3 features, use PCA to project onto 3D space
+    # Include some original data for labels
+    hover_cols = df.columns[:10].tolist() 
+    
     if len(analysis_features) > 3:
         pca = PCA(n_components=3)
         viz_data = pca.fit_transform(scaled_data)
         viz_cols = ['PCA_1', 'PCA_2', 'PCA_3']
         plot_df = pd.DataFrame(viz_data, columns=viz_cols)
+        # Merge back some original data for labels
+        for col in hover_cols:
+            plot_df[col] = df[col].values
         plot_df['Cluster'] = clusters.astype(str)
         title = f"3D Cluster Projection (K={n_clusters})"
     else:
-        plot_df = data.copy()
+        plot_df = df.copy()
         viz_cols = analysis_features
         plot_df['Cluster'] = clusters.astype(str)
         title = f"Cluster Visualization (K={n_clusters})"
@@ -67,6 +73,7 @@ def perform_clustering(df: pd.DataFrame, n_clusters: int = None, features: list 
         fig = px.scatter_3d(
             plot_df, x=viz_cols[0], y=viz_cols[1], z=viz_cols[2],
             color='Cluster',
+            hover_data=hover_cols,
             title=title,
             template="plotly_white",
             color_discrete_sequence=get_seaborn_colors("mako", n_clusters)
@@ -75,6 +82,7 @@ def perform_clustering(df: pd.DataFrame, n_clusters: int = None, features: list 
         fig = px.scatter(
             plot_df, x=viz_cols[0], y=viz_cols[1],
             color='Cluster',
+            hover_data=hover_cols,
             title=title,
             template="plotly_white",
             color_discrete_sequence=get_seaborn_colors("mako", n_clusters)
@@ -88,10 +96,12 @@ def perform_clustering(df: pd.DataFrame, n_clusters: int = None, features: list 
     elbow_fig.update_layout(title="Elbow Method Analysis", xaxis_title="K (Count)", yaxis_title="Inertia")
     apply_premium_style(elbow_fig)
 
+    chart_json = json.loads(fig.to_json())
     return {
         "cluster_labels": clusters.tolist(),
         "n_clusters": n_clusters,
-        "main_chart": json.loads(fig.to_json()),
+        "main_chart": chart_json,
+        "chart": chart_json, # For compatibility
         "elbow_chart": json.loads(elbow_fig.to_json()),
         "summary": f"Grouped your dataset into {n_clusters} distinct segments using K-Means analysis."
     }
@@ -121,10 +131,13 @@ def detect_anomalies(df: pd.DataFrame, contamination: float = 0.05) -> dict:
     df_plot['Dim_1'] = pca_res[:, 0]
     df_plot['Dim_2'] = pca_res[:, 1]
     
+    hover_cols = df.columns[:10].tolist()
+
     fig = px.scatter(
         df_plot, x='Dim_1', y='Dim_2',
         color='Status',
         symbol='Status',
+        hover_data=hover_cols,
         title="Anomaly Radar: Projected Outlier Space",
         color_discrete_map={'Anomaly': '#e74c3c', 'Normal': '#2ecc71'},
         template="plotly_white"
@@ -133,9 +146,12 @@ def detect_anomalies(df: pd.DataFrame, contamination: float = 0.05) -> dict:
     
     anomaly_count = (preds == -1).sum()
     
+    chart_json = json.loads(fig.to_json())
     return {
         "anomaly_count": int(anomaly_count),
         "total_rows": len(df),
-        "chart": json.loads(fig.to_json()),
+        "main_chart": chart_json, # For consistency
+        "chart": chart_json,
         "summary": f"Identified {anomaly_count} potential anomalies within the dataset using Isolation Forest detection."
     }
+

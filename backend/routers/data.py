@@ -3,7 +3,7 @@ from core.store import store
 from core.database import get_upload_history, get_upload_by_id, clear_upload_history
 from utils.file_parser import parse_file
 from services.data_processing import clean_dataframe, get_insights
-from services.visualization import generate_insights_chart, generate_dashboard, generate_strategy_chart
+from services.visualization import generate_insights_chart, generate_dashboard, generate_strategy_chart, generate_insights_suite
 from services.ai_viz import generate_ai_dashboard, generate_view_report, ai_observe_data
 from services.ml import predict_future_trends
 from services.ml_advanced import perform_clustering, detect_anomalies
@@ -27,9 +27,18 @@ async def load_file_from_history(file_id: int):
     if not record:
         raise HTTPException(status_code=404, detail="File record not found")
     
-    df = await parse_file(record['file_path'])
+    # 1. Try loading from TiDB HTAP (Permanent store)
+    from core.tidb import tidb_manager
+    print(f"Attempting to load dataset from TiDB for ID: {file_id}")
+    df = tidb_manager.get_dataset_records(file_id)
+    
+    # 2. Fallback to physical file if TiDB lookup fails
     if df is None:
-        raise HTTPException(status_code=400, detail="Failed to load file from disk")
+        print(f"TiDB records missing. Falling back to physical file: {record['file_path']}")
+        df = await parse_file(record['file_path'])
+        
+    if df is None:
+        raise HTTPException(status_code=400, detail="Failed to load file from database or disk")
         
     cleaned_df = clean_dataframe(df)
     
@@ -86,8 +95,10 @@ async def get_insights_view():
     if df is None:
         raise HTTPException(status_code=400, detail="No dataset uploaded")
     
-    chart = generate_insights_chart(df)
-    return {"chart": chart}
+    profile = store.get_semantic_profile()
+    charts = generate_insights_suite(df, profile)
+    return {"charts": charts}
+
 
 @router.get("/dashboard")
 async def get_dashboard_view():

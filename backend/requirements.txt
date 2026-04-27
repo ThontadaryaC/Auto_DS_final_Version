@@ -17,5 +17,3 @@ pymongo
 dnspython
 seaborn
 mysql-connector-python
-duckduckgo-search
-beautifulsoup4

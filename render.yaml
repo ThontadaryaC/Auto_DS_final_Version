@@ -12,7 +12,8 @@ services:
         sync: false
       - key: MONGODB_URI
         sync: false
-      - key: mysql --comments -u '2zSvroz3eJhSWyZ.root' -h gateway01.ap-southeast-1.prod.alicloud.tidbcloud.com -P 4000 -D 'test' --ssl-mode=VERIFY_IDENTITY --ssl-ca=<CA_PATH> -p'jnOymssFprrBCdr5'
+      - key: TIDB_URL
+        value: mysql --comments -u '2zSvroz3eJhSWyZ.root' -h gateway01.ap-southeast-1.prod.alicloud.tidbcloud.com -P 4000 -D 'test' --ssl-mode=VERIFY_IDENTITY --ssl-ca=<CA_PATH> -p'jnOymssFprrBCdr5'
         sync: true
       - key: TIDB_CA_PATH
         value: ./isrgrootx1.pem

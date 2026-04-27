@@ -2,8 +2,7 @@ import pandas as pd
 import json
 from agent.llm_config import get_llm
 from langchain_core.messages import HumanMessage
-import numpy as np
-from services.scraper import research_industry_context
+
 
 def generate_ai_dashboard(df: pd.DataFrame, filename: str = "Unknown Dataset", semantic_profile: dict = None) -> dict:
     """Uses Gemini to analyze data and generate diverse Plotly visualizations and a report based on semantic profile."""
@@ -67,15 +66,6 @@ def generate_view_report(df: pd.DataFrame, view_type: str, additional_context: s
         "dashboard": "Provide a high-level summary of the key performance indicators and patterns observed in the interactive dashboard."
     }
 
-    # NEW: Web Research for Context
-    industry_context = "No additional context available."
-    try:
-        # Generate a search query based on columns and view type
-        search_query = f"Latest industry trends and news for dataset with columns {list(df.columns[:5])} focus on {view_type}"
-        industry_context = research_industry_context(search_query)
-    except Exception as scrape_err:
-        print(f"Bypassing web research due to error: {scrape_err}")
-
     task_prompt = context_prompts.get(view_type.lower(), "Provide a holistic data analysis report.")
     
     # FIX: Use to_json to handle Timestamps properly
@@ -83,9 +73,6 @@ def generate_view_report(df: pd.DataFrame, view_type: str, additional_context: s
     
     prompt = f"""
     You are a Principal Data Scientist and Industry Specialist.
-    
-    INDUSTRY CONTEXT (Web Researched):
-    {industry_context}
     
     Data Sample (JSON): {sample_data_json}
     Dataset Architecture: {json.dumps(cols_info)}

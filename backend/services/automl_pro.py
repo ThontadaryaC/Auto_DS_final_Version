@@ -126,11 +126,14 @@ def run_advanced_automl(df: pd.DataFrame, target_col: str, task_type: str = "aut
         )
 
     apply_premium_style(fig)
+    chart_json = json.loads(fig.to_json())
 
     return {
         "task_type": task_type,
         "best_model": best_model_name,
         "accuracy": f"{best_score * 100:.2f}%",
-        "chart": json.loads(fig.to_json()),
+        "chart": chart_json,
+        "main_chart": chart_json, # For consistency in AdvancedAnalysis.jsx
         "summary": f"Targeting '{target_col}' using a {best_model_name} {task_type}. Achieved industrial precision of {best_score * 100:.1f}%."
     }
+
