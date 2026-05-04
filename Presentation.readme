@@ -1,0 +1,102 @@
+# AutoDS Project Presentation
+
+## Slide 1: Introduction to AutoDS
+- **Project Name:** AutoDS (Automated Data Science Platform)
+- **Purpose:** A comprehensive, automated data science platform designed to simplify and accelerate the data analysis workflow.
+- **Goal:** To democratize data science by providing an intuitive interface for data uploading, cleaning, analysis, visualization, and machine learning model building without requiring extensive coding expertise.
+
+## Slide 2: Hardware Requirements
+- **Development/Local Environment:**
+  - **Processor:** Intel Core i5 / AMD Ryzen 5 or higher
+  - **RAM:** Minimum 8GB (16GB recommended for handling larger datasets)
+  - **Storage:** Minimum 500GB HDD/SSD (SSD highly recommended for faster data processing)
+  - **Internet:** Stable internet connection for API integrations and deployment
+- **Production/Deployment Environment (Minimum Specs):**
+  - Dependent on the cloud provider, but typically requires at least 2 vCPUs and 4GB RAM for the backend, with scalable database storage.
+
+## Slide 3: Software Requirements
+- **Operating System:** Windows 10/11, macOS, or Linux
+- **Development Tools:**
+  - IDE: VS Code, PyCharm, or similar
+  - Version Control: Git
+- **Runtime Environments:**
+  - Python 3.10+
+  - Node.js (v18+) & npm/yarn
+- **Web Browser:** Modern browser (Chrome, Firefox, Edge, Safari) for the frontend interface.
+
+## Slide 4: Technologies Used
+### Frontend
+- **Framework:** React.js (via Vite)
+- **Styling:** Tailwind CSS
+- **Routing:** React Router DOM
+- **Data Visualization:** Plotly.js (react-plotly.js)
+- **Other Tools:** Axios (API requests), html2canvas/jspdf (report generation), lucide-react/react-icons (icons)
+
+### Backend
+- **Framework:** FastAPI (Python)
+- **Data Processing:** Pandas, NumPy
+- **Machine Learning:** Scikit-learn
+- **AI Integration:** Langchain, Google Generative AI (Gemini), OpenRouter
+- **Database Connectivity:** PyMongo, MySQL Connector
+
+### Databases
+- **SQL/Relational:** SQLite (local development), TiDB (Cloud Database for production metadata/registry)
+- **NoSQL:** MongoDB (optional/flexible storage)
+
+## Slide 5: Deployment Strategy
+- **Frontend Deployment:**
+  - **Platform:** Can be hosted on Vercel, Netlify, or AWS S3/CloudFront.
+  - **Strategy:** Build the static assets (`npm run build`) and deploy to a CDN for fast global access.
+- **Backend Deployment:**
+  - **Platform:** Render (as per `render.yaml`), Heroku, AWS (EC2/Elastic Beanstalk), or DigitalOcean.
+  - **Strategy:** Deployed as a web service running Uvicorn, exposing RESTful APIs.
+- **Database Deployment:**
+  - **TiDB:** Cloud-hosted serverless SQL database (AliCloud/AWS).
+  - **MongoDB:** MongoDB Atlas for managed NoSQL data.
+
+## Slide 6: Project Architecture & Workflow
+### High-Level Workflow Flowchart
+```mermaid
+graph TD
+    A[User / Client] -->|Uploads CSV/Excel| B(React Frontend)
+    B -->|API Request via Axios| C{FastAPI Backend}
+    C -->|Data Cleaning & Prep| D[Pandas / NumPy processing]
+    
+    D -->|Feature Engineering| E[Scikit-learn AutoML]
+    D -->|Data Profiling| F[Statistical Insights]
+    
+    F -->|Store Metadata| G[(TiDB / Dataset Registry)]
+    
+    E -->|Model Metrics| H[Langchain / LLM Analysis]
+    F -->|Patterns & Anomalies| H
+    
+    H -->|Generates Insights & JSON Data| C
+    C -->|Sends back processed data| B
+    B -->|Renders Plotly Charts| I[Interactive Dashboard]
+    I -->|Export as PDF| J[Final Report]
+```
+
+### Step-by-Step Execution:
+1. **Data Ingestion:** The user uploads a dataset (CSV, Excel) through the intuitive React frontend interface.
+2. **API Communication:** The frontend sends the dataset securely via Axios to the FastAPI backend endpoints.
+3. **Data Processing & Cleaning:** The backend utilizes Pandas and NumPy to read, clean, handle missing values, and preprocess the raw data.
+4. **AI/ML Analysis & Profiling:**
+   - **Descriptive/Diagnostic:** Generates statistical insights, semantic profiles, and anomaly detection (metadata stored permanently in TiDB for quick retrieval).
+   - **Predictive:** Uses Scikit-learn for automated machine learning (AutoML) to train baseline models and Langchain/LLMs (Gemini/OpenRouter) to generate human-readable insights.
+5. **Visualization Generation:** The backend structures the processed data, model metrics, and insights, returning them to the frontend.
+6. **Dashboard Rendering:** The frontend dynamically renders interactive, PowerBI-style charts (using Plotly.js) and displays textual AI insights.
+7. **Export & Reporting:** The user can interact with the data and export the final analytical findings as a comprehensive PDF report.
+
+## Slide 7: Target Audience (Who Is It Helpful For?)
+- **Data Analysts & Scientists:** Rapid prototyping and exploratory data analysis (EDA).
+- **Business Analysts & Managers:** Extracting quick insights from business data without writing code.
+- **Students & Educators:** Learning data science concepts through an interactive platform.
+- **Small to Medium Enterprises (SMEs):** Organizations lacking a dedicated data science team but needing data-driven decision-making.
+
+## Slide 8: The Industrial Gap Fulfilled
+- **The Problem:** Traditional data science workflows are fragmented, time-consuming, and require deep technical expertise (coding in Python/R, managing libraries, configuring environments).
+- **The Solution (AutoDS):**
+  - **No-Code/Low-Code:** Bridges the gap between raw data and actionable insights without requiring programming skills.
+  - **Unified Platform:** Integrates data cleaning, visualization, machine learning, and AI-driven insights into a single seamless workflow.
+  - **Speed to Insight:** Drastically reduces the time required to perform standard EDA and build baseline ML models.
+  - **Accessibility:** Democratizes advanced analytics, making it accessible to non-technical stakeholders.

@@ -3,6 +3,7 @@ import numpy as np
 import json
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.impute import SimpleImputer
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, RandomForestClassifier, GradientBoostingClassifier
@@ -53,10 +54,20 @@ def run_advanced_automl(df: pd.DataFrame, target_col: str, task_type: str = "aut
     cat_features = X.select_dtypes(exclude=['number']).columns.tolist()
 
     # Preprocessing Pipeline
+    num_transformer = Pipeline(steps=[
+        ('imputer', SimpleImputer(strategy='median')),
+        ('scaler', StandardScaler())
+    ])
+
+    cat_transformer = Pipeline(steps=[
+        ('imputer', SimpleImputer(strategy='most_frequent')),
+        ('onehot', OneHotEncoder(handle_unknown='ignore', sparse_output=False))
+    ])
+
     preprocessor = ColumnTransformer(
         transformers=[
-            ('num', StandardScaler(), num_features),
-            ('cat', OneHotEncoder(handle_unknown='ignore', sparse_output=False), cat_features)
+            ('num', num_transformer, num_features),
+            ('cat', cat_transformer, cat_features)
         ]
     )
 
